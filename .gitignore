@@ -1,0 +1,29 @@
+# Rust workspace / Cargo
+target/
+Cargo.lock
+
+# Logs
+*.log
+log/
+logs/
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor / IDE
+.idea/
+.vscode/
+
+# OS (macOS / Windows)
+.DS_Store
+Thumbs.db
+
+# Files
+**.pdf
+**/examples/generated/**
+
+gitusage.md

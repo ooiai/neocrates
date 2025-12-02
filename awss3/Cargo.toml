@@ -1,0 +1,21 @@
+[package]
+name = "awss3"
+version = "0.1.0"
+authors.workspace = true
+edition = "2024"
+description = "AWS S3 helper crate for neocrates workspace"
+license = "Apache-2.0"
+repository = "https://github.com/ooiai/neocrates.git"
+readme = "../README.md"
+publish = ["crates-io"]
+include = ["src/**", "../README.md", "LICENSE*", "Cargo.toml"]
+
+[dependencies]
+# dependencies
+aws-config = { workspace = true, features = ["behavior-version-latest"] }
+aws-types.workspace = true
+aws-sdk-s3.workspace = true
+
+[dev-dependencies]
+thiserror.workspace = true
+tokio = { workspace = true, features = ["full"] }

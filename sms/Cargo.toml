@@ -1,0 +1,33 @@
+[package]
+name = "sms"
+version = "0.1.0"
+authors.workspace = true
+edition = "2024"
+description = "SMS utilities for the neocrates workspace"
+license = "Apache-2.0"
+repository = "https://github.com/ooiai/neocrates.git"
+readme = "../README.md"
+publish = ["crates-io"]
+include = ["src/**", "../README.md", "LICENSE*", "Cargo.toml"]
+
+
+[dependencies]
+reqwest = { workspace = true, features = ["gzip", "json"] }
+serde = { workspace = true, features = ["derive"] }
+thiserror.workspace = true
+serde_json.workspace = true
+base64.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+rand.workspace = true
+ring.workspace = true
+urlencoding.workspace = true
+sha2.workspace = true
+hmac.workspace = true
+hex.workspace = true
+url.workspace = true
+sha1.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

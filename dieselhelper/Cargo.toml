@@ -1,0 +1,24 @@
+[package]
+name = "dieselhelper"
+version = "0.1.0"
+authors.workspace = true
+edition = "2024"
+description = "Diesel helper utilities for the neocrates workspace"
+license = "Apache-2.0"
+repository = "https://github.com/ooiai/neocrates.git"
+readme = "../README.md"
+publish = ["crates-io"]
+include = ["src/**", "../README.md", "LICENSE*", "Cargo.toml"]
+
+
+[dependencies]
+# dependencies
+thiserror.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true
+deadpool.workspace = true
+diesel = { workspace = true, features = ["chrono", "serde_json"] }
+deadpool-diesel = { workspace = true, features = ["postgres"] }
+diesel_migrations.workspace = true
+
+[dev-dependencies]

@@ -1,0 +1,24 @@
+[package]
+name = "rediscache"
+version = "0.1.0"
+authors.workspace = true
+edition = "2024"
+description = "Redis cache utilities for the neocrates workspace"
+license = "Apache-2.0"
+repository = "https://github.com/ooiai/neocrates.git"
+readme = "../README.md"
+publish = ["crates-io"]
+include = ["src/**", "../README.md", "LICENSE*", "Cargo.toml"]
+
+
+[dependencies]
+logger.workspace = true
+
+tracing.workspace = true
+tokio = { workspace = true, features = ["full"] }
+redis.workspace = true
+bb8.workspace = true
+bb8-redis.workspace = true
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]

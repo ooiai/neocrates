@@ -1,0 +1,38 @@
+[package]
+name = "helper"
+version = "0.1.0"
+authors.workspace = true
+edition = "2024"
+description = "Helper utilities for the neocrates workspace"
+license = "Apache-2.0"
+repository = "https://github.com/ooiai/neocrates.git"
+readme = "../README.md"
+publish = ["crates-io"]
+include = ["src/**", "../README.md", "LICENSE*", "Cargo.toml"]
+
+
+
+[dependencies]
+chrono.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+once_cell.workspace = true
+lazy_static.workspace = true
+regex.workspace = true
+crockford.workspace = true
+validator.workspace = true
+anyhow.workspace = true
+zstd.workspace = true
+hex.workspace = true
+rand_core = { workspace = true, features = ["std"] }
+uuid = { workspace = true, features = ["v4"] }
+rand.workspace = true
+tracing.workspace = true
+rand_distr.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
+
+
+[dev-dependencies]

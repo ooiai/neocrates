@@ -27,3 +27,5 @@ Thumbs.db
 **/examples/generated/**
 
 gitusage.md
+
+.github/*

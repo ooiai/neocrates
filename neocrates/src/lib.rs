@@ -41,110 +41,57 @@
 
 // Re-export commonly used dependencies
 pub use anyhow;
+pub use argon2;
 pub use async_trait;
+pub use aws_config;
+pub use aws_sdk_s3;
+pub use aws_sdk_sts;
+pub use aws_types;
 pub use axum;
+pub use bb8;
+pub use bb8_redis;
 pub use bon;
 pub use chrono;
 pub use dashmap;
+pub use deadpool;
+pub use deadpool_diesel;
+pub use diesel;
+pub use diesel_migrations;
+pub use hmac;
+pub use hyper;
 pub use indexmap;
 pub use lazy_static;
+pub use lazy_static;
 pub use log;
+pub use moka;
 pub use once_cell;
 pub use rand;
+pub use redis;
 pub use regex;
+pub use reqwest;
+pub use ring;
+pub use schemars;
 pub use serde;
 pub use serde_json;
+pub use sha2;
 pub use thiserror;
 pub use tokio;
 pub use tower;
 pub use tower_http;
 pub use tracing;
 pub use url;
+pub use urlencoding;
 pub use uuid;
+pub use validator;
 
-// Optional feature re-exports
-#[cfg(feature = "aws")]
-pub use aws_config;
-#[cfg(feature = "aws")]
-pub use aws_sdk_s3;
-#[cfg(feature = "aws")]
-pub use aws_sdk_sts;
-#[cfg(feature = "aws")]
-pub use aws_types;
-
-#[cfg(feature = "database")]
-pub use deadpool;
-#[cfg(feature = "database")]
-pub use deadpool_diesel;
-#[cfg(feature = "database")]
-pub use diesel;
-#[cfg(feature = "database")]
-pub use diesel_migrations;
-
-#[cfg(feature = "redis")]
-pub use bb8;
-#[cfg(feature = "redis")]
-pub use bb8_redis;
-#[cfg(feature = "redis")]
-pub use moka;
-#[cfg(feature = "redis")]
-pub use redis;
-
-#[cfg(feature = "crypto")]
-pub use argon2;
-#[cfg(feature = "crypto")]
-pub use hmac;
-#[cfg(feature = "crypto")]
-pub use openssl;
-#[cfg(feature = "crypto")]
-pub use ring;
-#[cfg(feature = "crypto")]
-pub use sha2;
-
-/// Module for common helper functions and utilities
-pub mod helpers {
-    //! Common helper functions and utilities
-}
-
-/// Module for response handling and formatting
-pub mod responses {
-    //! Response handling and formatting utilities
-}
-
-/// Module for logging utilities
-pub mod logging {
-    //! Logging utilities and configuration
-}
-
-/// Module for validation utilities
-pub mod validation {
-    //! Validation utilities and custom validators
-}
-
-/// Module for error handling
-pub mod errors {
-    //! Custom error types and error handling utilities
-}
-
-// Placeholder modules that can be expanded based on your actual implementation
-// You can replace these with actual implementations from your workspace crates
-
-/// Re-export helper functionality
-#[cfg(feature = "full")]
-pub use crate::helpers::*;
-
-/// Re-export response functionality
-#[cfg(feature = "full")]
-pub use crate::responses::*;
-
-/// Re-export logging functionality
-#[cfg(feature = "full")]
-pub use crate::logging::*;
-
-/// Re-export validation functionality
-#[cfg(feature = "full")]
-pub use crate::validation::*;
-
-/// Re-export error handling functionality
-#[cfg(feature = "full")]
-pub use crate::errors::*;
+// mod exports
+pub use awss3;
+pub use awssts;
+pub use crypto;
+pub use dieselhelper;
+pub use helper;
+pub use logger;
+pub use middleware;
+pub use rediscache;
+pub use responses;
+pub use sms;

@@ -3,7 +3,7 @@ resolver = "3"
 members = ["awss3", "awssts", "crypto", "dieselhelper","helper", "logger", "middleware", "rediscache", "response", "sms", "neocrates"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 authors = ["hamerkillers@gmail.com"]
 edition = "2024"
 

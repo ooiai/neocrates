@@ -13,13 +13,26 @@ keywords = ["utilities", "helpers", "web", "aws"]
 categories = ["web-programming", "asynchronous"]
 
 [dependencies]
+
+logger = { workspace = true }
+helper = { workspace = true }
+response = { workspace = true }
+rediscache = { workspace = true }
+awssts = { workspace = true }
+awss3 = { workspace = true }
+crypto = { workspace = true }
+dieselhelper = { workspace = true }
+middleware = { workspace = true }
+sms = { workspace = true }
+
+
 # Inherit common dependencies from workspace
 axum = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tower = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 log = { workspace = true }
 once_cell = { workspace = true }
 lazy_static = { workspace = true }
@@ -32,7 +45,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_with = { workspace = true }
 schemars = { workspace = true }
-chrono = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
 uuid = { workspace = true, features = ["v4", "fast-rng"] }
 url = { workspace = true }
 urlencoding = { workspace = true }
@@ -50,7 +63,7 @@ rust_decimal = { workspace = true }
 snowflaker = { workspace = true }
 prometheus = { workspace = true }
 hyper = { workspace = true, features = ["full"] }
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["gzip", "json"] }
 crockford = { workspace = true }
 rayon = { workspace = true }
 zstd = { workspace = true }
@@ -58,37 +71,41 @@ flate2 = { workspace = true }
 stream_throttle = { workspace = true }
 async-stream = { workspace = true }
 tempfile = { workspace = true }
+password-hash = { workspace = true, features = ["rand_core"] }
+rand_core = { workspace = true, features = ["std"] }
+openssl = { workspace = true, features = ["vendored"] }
+
 
 # Optional feature dependencies (now using workspace inheritance)
 # AWS dependencies (optional)
-aws-config = { workspace = true, optional = true }
-aws-sdk-s3 = { workspace = true, optional = true }
-aws-sdk-sts = { workspace = true, optional = true }
-aws-types = { workspace = true, optional = true }
+aws-config = { workspace = true, features = ["behavior-version-latest"] }
+aws-sdk-s3 = { workspace = true }
+aws-sdk-sts = { workspace = true }
+aws-types = { workspace = true }
 
 # Database dependencies (optional)
-deadpool = { workspace = true, optional = true }
-diesel = { workspace = true, optional = true }
-deadpool-diesel = { workspace = true, optional = true }
-diesel_migrations = { workspace = true, optional = true }
+deadpool = { workspace = true }
+diesel = { workspace = true, features = ["chrono", "serde_json"] }
+deadpool-diesel = { workspace = true, features = ["postgres"] }
+diesel_migrations = { workspace = true }
 
 # Redis dependencies (optional)
-redis = { workspace = true, optional = true }
-bb8 = { workspace = true, optional = true }
-bb8-redis = { workspace = true, optional = true }
-moka = { workspace = true, optional = true }
+redis = { workspace = true }
+bb8 = { workspace = true }
+bb8-redis = { workspace = true }
+moka = { workspace = true }
 
 # Crypto dependencies (optional)
-openssl = { workspace = true, optional = true }
-ring = { workspace = true, optional = true }
-argon2 = { workspace = true, optional = true }
-hmac = { workspace = true, optional = true }
-sha2 = { workspace = true, optional = true }
+# openssl = { workspace = true, features = ["vendored"] }
+ring = { workspace = true }
+argon2 = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }
 
-[features]
-default = []
-aws = ["dep:aws-config", "dep:aws-sdk-s3", "dep:aws-sdk-sts", "dep:aws-types"]
-database = ["dep:deadpool", "dep:diesel", "dep:deadpool-diesel", "dep:diesel_migrations"]
-redis = ["dep:redis", "dep:bb8", "dep:bb8-redis", "dep:moka"]
-crypto = ["dep:openssl", "dep:ring", "dep:argon2", "dep:hmac", "dep:sha2"]
-full = ["aws", "database", "redis", "crypto"]
+# [features]
+# default = []
+# aws = ["dep:aws-config", "dep:aws-sdk-s3", "dep:aws-sdk-sts", "dep:aws-types"]
+# database = ["dep:deadpool", "dep:diesel", "dep:deadpool-diesel", "dep:diesel_migrations"]
+# redis = ["dep:redis", "dep:bb8", "dep:bb8-redis", "dep:moka"]
+# crypto = ["dep:openssl", "dep:ring", "dep:argon2", "dep:hmac", "dep:sha2"]
+# full = ["aws", "database", "redis", "crypto"]

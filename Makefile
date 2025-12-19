@@ -62,3 +62,31 @@ publish:
 	$(call git_commit_if_needed)
 	cd $(NEOCRATES_PATH) &&  $(CARGO) publish -p neocrates --registry crates-io || exit 1
 	cd $(NEOCRATES_PATH) && $(CARGO) clean
+
+# Publish all crates in the correct order
+publish-all:
+	@echo "===> Publishing Level 0 (Independent Crates)..."
+	# Use '|| true' to continue if version already exists
+	$(CARGO) publish -p helper --registry crates-io || true
+	$(CARGO) publish -p logger --registry crates-io || true
+	$(CARGO) publish -p crypto --registry crates-io || true
+	$(CARGO) publish -p response --registry crates-io || true
+	$(CARGO) publish -p awss3 --registry crates-io || true
+	$(CARGO) publish -p awssts --registry crates-io || true
+	$(CARGO) publish -p sms --registry crates-io || true
+	$(CARGO) publish -p dieselhelper --registry crates-io || true
+
+	@echo "===> Waiting 20s for registry sync..."
+	@sleep 20
+
+	@echo "===> Publishing Level 1..."
+	$(CARGO) publish -p rediscache --registry crates-io || true
+
+	@echo "===> Publishing Level 2..."
+	$(CARGO) publish -p middleware --registry crates-io || true
+
+	@echo "===> Waiting 10s for registry sync..."
+	@sleep 10
+
+	@echo "===> Publishing Final Crate (neocrates)..."
+	$(CARGO) publish -p neocrates --registry crates-io

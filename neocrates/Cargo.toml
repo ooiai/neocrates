@@ -1,8 +1,8 @@
 [package]
 name = "neocrates"
-version = { workspace = true }
-authors = { workspace = true }
-edition = { workspace = true }
+version = "0.1.1"
+authors.workspace = true
+edition = "2024"
 description = "A comprehensive Rust library for various utilities and helpers"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ooiai/neocrates.git"
@@ -14,16 +14,16 @@ categories = ["web-programming", "asynchronous"]
 
 [dependencies]
 
-logger = { workspace = true }
-helper = { workspace = true }
-response = { workspace = true }
-rediscache = { workspace = true }
-awssts = { workspace = true }
-awss3 = { workspace = true }
-crypto = { workspace = true }
-dieselhelper = { workspace = true }
-middleware = { workspace = true }
-sms = { workspace = true }
+logger = { workspace = true, version = "0.1.0"}
+helper = { workspace = true, version = "0.1.0" }
+response = { workspace = true, version = "0.1.0" }
+rediscache = { workspace = true, version = "0.1.0" }
+awssts = { workspace = true , version = "0.1.0"}
+awss3 = { workspace = true , version = "0.1.0"}
+crypto = { workspace = true , version = "0.1.0"}
+dieselhelper = { workspace = true , version = "0.1.0"}
+middleware = { workspace = true , version = "0.1.0"}
+sms = { workspace = true , version = "0.1.0"}
 
 
 # Inherit common dependencies from workspace

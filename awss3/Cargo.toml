@@ -1,8 +1,8 @@
 [package]
 name = "awss3"
-version = "0.1.0"
-authors.workspace = true
-edition = "2024"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
 description = "AWS S3 helper crate for neocrates workspace"
 license = "Apache-2.0"
 repository = "https://github.com/ooiai/neocrates.git"

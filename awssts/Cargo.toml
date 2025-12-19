@@ -1,5 +1,5 @@
 [package]
-name = "awssts"
+name = "neocrates-awssts"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

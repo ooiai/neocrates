@@ -66,24 +66,25 @@ publish:
 # Publish all crates in the correct order
 publish-all:
 	@echo "===> Publishing Level 0 (Independent Crates)..."
+	$(call git_commit_if_needed)
 	# Use '|| true' to continue if version already exists
-	$(CARGO) publish -p helper --registry crates-io || true
-	$(CARGO) publish -p logger --registry crates-io || true
-	$(CARGO) publish -p crypto --registry crates-io || true
-	$(CARGO) publish -p response --registry crates-io || true
-	$(CARGO) publish -p awss3 --registry crates-io || true
-	$(CARGO) publish -p awssts --registry crates-io || true
-	$(CARGO) publish -p sms --registry crates-io || true
-	$(CARGO) publish -p dieselhelper --registry crates-io || true
+	$(CARGO) publish -p neocrates-helper --registry crates-io || true
+	$(CARGO) publish -p neocrates-logger --registry crates-io || true
+	$(CARGO) publish -p neocrates-crypto --registry crates-io || true
+	$(CARGO) publish -p neocrates-response --registry crates-io || true
+	$(CARGO) publish -p neocrates-awss3 --registry crates-io || true
+	$(CARGO) publish -p neocrates-awssts --registry crates-io || true
+	$(CARGO) publish -p neocrates-sms --registry crates-io || true
+	$(CARGO) publish -p neocrates-dieselhelper --registry crates-io || true
 
 	@echo "===> Waiting 20s for registry sync..."
 	@sleep 20
 
 	@echo "===> Publishing Level 1..."
-	$(CARGO) publish -p rediscache --registry crates-io || true
+	$(CARGO) publish -p neocrates-rediscache --registry crates-io || true
 
 	@echo "===> Publishing Level 2..."
-	$(CARGO) publish -p middleware --registry crates-io || true
+	$(CARGO) publish -p neocrates-middleware --registry crates-io || true
 
 	@echo "===> Waiting 10s for registry sync..."
 	@sleep 10

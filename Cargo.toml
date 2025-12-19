@@ -98,7 +98,7 @@ async-trait = "0.1"
 
 # cryptography
 # https://crates.io/crates/openssl
-openssl = "0.10"
+openssl = { version = "0.10", features = ["vendored"] }
 base64 = "0.22"
 md5 = "0.7"
 hmac = "0.12"

@@ -1,5 +1,5 @@
 [package]
-name = "awss3"
+name = "neocrates-awss3"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

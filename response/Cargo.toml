@@ -1,5 +1,5 @@
 [package]
-name = "response"
+name = "neocrates-response"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

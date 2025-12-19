@@ -1,5 +1,5 @@
 [package]
-name = "dieselhelper"
+name = "neocrates-dieselhelper"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

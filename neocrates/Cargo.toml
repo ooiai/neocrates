@@ -96,7 +96,6 @@ bb8-redis = { workspace = true }
 moka = { workspace = true }
 
 # Crypto dependencies (optional)
-# openssl = { workspace = true, features = ["vendored"] }
 ring = { workspace = true }
 argon2 = { workspace = true }
 hmac = { workspace = true }

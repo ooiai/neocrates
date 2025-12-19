@@ -49,16 +49,16 @@ test:
 # neocrate watch commands
 clean:
 	@echo "Cleaning neocrate in $(NEOCRATES_PATH)..."
-	cd $(NEOCRATES_PATH) && $(CARGO) clean
+	$(CARGO) clean
 # neocrate dry run
 dry-run:
 	@echo "===> Dry-run neocrates"
 	$(call git_commit_if_needed)
-	cd $(NEOCRATES_PATH) &&  $(CARGO) publish -p neocrates --dry-run --registry crates-io || exit 1
+	$(CARGO) publish -p neocrates --dry-run --registry crates-io || exit 1
 
 # Publish facade crate to crates.io (requires `cargo login`)
 publish:
 	@echo "===> Publishing neocrates"
 	$(call git_commit_if_needed)
-	cd $(NEOCRATES_PATH) &&  $(CARGO) publish -p neocrates --registry crates-io || exit 1
-	cd $(NEOCRATES_PATH) && $(CARGO) clean
+	$(CARGO) publish -p neocrates --registry crates-io || exit 1
+	$(CARGO) clean

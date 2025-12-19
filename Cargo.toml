@@ -11,16 +11,16 @@ edition = "2024"
 #
 # Workspace member crates
 #
-logger = { path = "logger" }
-helper = {  path = "helper" }
-response = {  path = "response" }
-rediscache = {  path = "rediscache" }
-awssts = {  path = "awssts" }
-awss3 = {  path = "awss3" }
-crypto = { path = "crypto" }
-dieselhelper = {path = "dieselhelper" }
-middleware = { path = "middleware" }
-sms = { path = "sms" }
+logger = { path = "logger", version = "0.1.0" }
+helper = { path = "helper", version = "0.1.0" }
+response = { path = "response", version = "0.1.0" }
+rediscache = { path = "rediscache", version = "0.1.0" }
+awssts = { path = "awssts", version = "0.1.0" }
+awss3 = { path = "awss3", version = "0.1.0" }
+crypto = { path = "crypto", version = "0.1.0" }
+dieselhelper = { path = "dieselhelper", version = "0.1.0" }
+middleware = { path = "middleware", version = "0.1.0" }
+sms = { path = "sms", version = "0.1.0" }
 
 #
 # Workspace dependencies

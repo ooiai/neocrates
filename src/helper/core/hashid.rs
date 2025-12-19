@@ -25,7 +25,7 @@ pub fn decode_i64(s: &str) -> i64 {
 // test
 #[cfg(test)]
 mod tests {
-    use crate::core::{
+    use crate::helper::core::{
         hashid::{decode_i64, encode_i64},
         snowflake::generate_snowflake_id,
     };

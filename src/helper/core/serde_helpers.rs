@@ -474,7 +474,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::core::hashid::{decode_i64, encode_i64};
+    use crate::helper::core::hashid::{decode_i64, encode_i64};
 
     #[test]
     fn test_encode() {

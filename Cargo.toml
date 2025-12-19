@@ -54,7 +54,7 @@ diesel_migrations = "2"
 redis = "0.32"
 bb8 = "0.9"
 bb8-redis = "0.24"
-moka = "0.12"
+moka = { version = "0.12", features = ["future"] }
 
 # AWS
 aws-config = { version = "1.1.7", features = ["behavior-version-latest"] }
@@ -86,3 +86,4 @@ imageproc = "0.25"
 rust_decimal = "1.38"
 snowflaker = "0.3"
 prometheus = "0.14.0"
+schemars = "1"

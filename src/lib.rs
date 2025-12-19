@@ -32,12 +32,12 @@
 //! Example with specific features:
 //! ```toml
 //! [dependencies]
-//! neocrates = { version = "0.1", features = ["aws", "database"] }
+//! neocrates = { version = "0.1" }
 //! ```
 
 #![doc(html_root_url = "https://docs.rs/neocrates/0.1.0")]
-#![warn(missing_docs)]
-#![warn(rustdoc::missing_crate_level_docs)]
+#![allow(missing_docs)]
+#![allow(rustdoc::missing_crate_level_docs)]
 
 // Re-export commonly used dependencies
 pub use anyhow;
@@ -60,7 +60,6 @@ pub use diesel_migrations;
 pub use hmac;
 pub use hyper;
 pub use indexmap;
-pub use lazy_static;
 pub use lazy_static;
 pub use log;
 pub use moka;

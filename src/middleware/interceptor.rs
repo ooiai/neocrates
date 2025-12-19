@@ -4,14 +4,16 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use crate::response::error::{AppError, AppResult};
 use serde_json::{Value, json};
 use std::{collections::HashMap, sync::Arc};
 use url::form_urlencoded;
 
 use crate::{
-    ip::get_request_host,
-    models::{AUTHORIZATION, AuthModel, BASIC, BEARER, CACHE_AUTH_TOKEN, MiddlewareConfig},
+    middleware::{
+        ip::get_request_host,
+        models::{AUTHORIZATION, AuthModel, BASIC, BEARER, CACHE_AUTH_TOKEN, MiddlewareConfig},
+    },
+    response::error::{AppError, AppResult},
 };
 
 /// The web global interceptor that can be used for all requests.

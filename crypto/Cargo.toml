@@ -18,7 +18,7 @@ zstd.workspace = true
 hex.workspace = true
 argon2.workspace = true
 rand.workspace = true
-password-hash = { workspace = true, features = ["rand_core"] }
+password-hash = { workspace = true, features = ["rand_core", "std"] }
 anyhow.workspace = true
 tracing.workspace = true
 

@@ -1,166 +1,88 @@
-[workspace]
-resolver = "3"
-members = ["awss3", "awssts", "crypto", "dieselhelper","helper", "logger", "middleware", "rediscache", "response", "sms", "neocrates"]
-
-[workspace.package]
+[package]
+name = "neocrates"
 version = "0.1.1"
 authors = ["hamerkillers@gmail.com"]
 edition = "2024"
+description = "A comprehensive Rust library for various utilities and helpers"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ooiai/neocrates.git"
+readme = "../README.md"
 
-[workspace.dependencies]
-#
-# Workspace member crates
-#
-logger = { path = "logger", version = "0.1.1", package = "neocrates-logger" }
-helper = { path = "helper", version = "0.1.1", package = "neocrates-helper" }
-response = { path = "response", version = "0.1.1", package = "neocrates-response" }
-rediscache = { path = "rediscache", version = "0.1.1", package = "neocrates-rediscache" }
-awssts = { path = "awssts", version = "0.1.1", package = "neocrates-awssts" }
-awss3 = { path = "awss3", version = "0.1.1", package = "neocrates-awss3" }
-crypto = { path = "crypto", version = "0.1.1", package = "neocrates-crypto" }
-dieselhelper = { path = "dieselhelper", version = "0.1.1", package = "neocrates-dieselhelper" }
-middleware = { path = "middleware", version = "0.1.1", package = "neocrates-middleware" }
-sms = { path = "sms", version = "0.1.1", package = "neocrates-sms" }
-
-#
-# Workspace dependencies
-#
-# axum https://crates.io/crates/axum
-axum = "0.8"
-axum-extra = "0.10"
-# tokio https://crates.io/crates/tokio
-tokio = "1.44"
-# tower https://crates.io/crates/tower
-tower = "0.5"
-tower-http = "0.6"
-
-# log tracing
+[dependencies]
+# Core
+tokio = { version = "1.44", features = ["full"] }
 tracing = "0.1"
-tracing-subscriber = "0.3"
-
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+anyhow = "1.0"
+thiserror = "2.0"
+chrono = { version = "0.4", features = ["serde"] }
+async-trait = "0.1"
 log = "0.4"
 env_logger = "0.11"
-dotenv = "0.15"
-dotenvy = "0.15"
-# https://crates.io/crates/lazy_static
 once_cell = "1.21"
 lazy_static = "1.5"
-# clap https://crates.io/crates/clap
-clap = "4.5"
-# bon https://crates.io/crates/bon
-bon = "3.8"
 regex = "1"
-
-# validator https://crates.io/crates/validator
+uuid = { version = "1.18", features = ["v4", "fast-rng"] }
+rand = "0.9"
+rand_core = { version = "0.9", features = ["std"] }
+dashmap = "6.1"
+indexmap = "2"
+strum = "0.27"
+strum_macros = "0.27"
 validator = "0.20"
-# derive(Error) https://crates.io/crates/thiserror
-thiserror = "2.0"
-anyhow = "1.0"
+bon = "3.8"
 
-# json serde https://crates.io/crates/serde
-serde = "1.0"
-serde_json = "1.0"
-serde_with = "3.12"
-# https://crates.io/crates/schemars
-schemars = "1.0"
-# serde_yml https://crates.io/crates/serde_yml
-serde_yml = "0.0.12"
-serde_yaml = "0.9"
-
-# database
-deadpool = "0.12"
-diesel = "2"
-deadpool-diesel = "0.6"
-diesel_migrations = "2"
-
-# aws https://crates.io/users/aws-sdk-rust-ci
-aws-config = "1.1.7"
-aws-sdk-s3 = "1.83.0"
-aws-sdk-sts = "1.66.0"
-aws-types = "1.3.7"
-
-# timezone-aware date and time handling https://crates.io/crates/chrono
-chrono = "0.4"
-# https://crates.io/crates/uuid
-uuid = "1.18"
-
-# https://crates.io/crates/url
+# Web
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+tower-http = "0.6"
+hyper = { version = "1.6", features = ["full"] }
+reqwest = { version = "0.12", features = ["gzip", "json"] }
 url = "2.5.4"
 urlencoding = "2.1.3"
 
-# https://crates.io/crates/rand
-rand = "0.9"
-rand_core = "0.9"
-rand_distr = "0.5"
+# Database
+diesel = { version = "2", features = ["chrono", "serde_json"] }
+deadpool = "0.12"
+deadpool-diesel = { version = "0.6", features = ["postgres"] }
+diesel_migrations = "2"
 
-# https://crates.io/crates/async-trait
-async-trait = "0.1"
-
-# cryptography
-# https://crates.io/crates/openssl
-openssl = { version = "0.10", features = ["vendored"] }
-base64 = "0.22"
-md5 = "0.7"
-hmac = "0.12"
-hex = "0.4"
-sha1 = "0.10.6"
-sha2 = "0.10"
-argon2 = "0.5"
-frunk = "0.4"
-percent-encoding = "2.3.1"
-# signature https://crates.io/crates/signature
-signature = "2.2.0"
-# https://crates.io/crates/ring
-ring = "0.17.14"
-password-hash = "0.5"
-
-# quote https://crates.io/crates/quote
-syn = "2.0"
-quote = "1.0"
-# proc-macro2 https://crates.io/crates/proc-macro2
-proc-macro2 = "1.0"
-# hashbrown https://crates.io/crates/hashbrown
-hashbrown = "0.15"
-# crossbeam https://crates.io/crates/crossbeam-utils
-crossbeam = "0.8"
-# https://crates.io/crates/dashmap
-dashmap = "6.1"
-# https://crates.io/crates/indexmap
-indexmap = "2"
-
-quick-xml = "0.38"
-lru = "0.16"
-
-# cache
+# Redis
 redis = "0.32"
 bb8 = "0.9"
 bb8-redis = "0.24"
 moka = "0.12"
 
-strum = "0.27"
-strum_macros = "0.27"
+# AWS
+aws-config = { version = "1.1.7", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.83.0"
+aws-sdk-sts = "1.66.0"
+aws-types = "1.3.7"
 
-image = "0.25"
-imageproc = "0.25"
-
-rust_decimal = "1.38"
-
-# snowflaker
-snowflaker = "0.3"
-prometheus = "0.14.0"
-# http https://crates.io/crates/hyper https://crates.io/crates/reqwest
-hyper = { version = "1.6", features = ["full"] }
-reqwest = "0.12"
-# hashids https://crates.io/crates/crockford
+# Crypto & Utils
+openssl = { version = "0.10", features = ["vendored"] }
+ring = "0.17.14"
+argon2 = "0.5"
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+md5 = "0.7"
+hex = "0.4"
+sha1 = "0.10.6"
 crockford = "1.2"
-# data-parallelism library https://crates.io/crates/rayon
-rayon = "1.10"
-# compress&decompress https://crates.io/crates/zstd
 zstd = "0.13"
-# A streaming compression/decompression library DEFLATE-based streams in Rust. https://crates.io/crates/flate2
+password-hash = { version = "0.5", features = ["rand_core", "std"] }
+percent-encoding = "2.3.1"
 flate2 = "1.0"
-# limit rate https://crates.io/crates/stream_throttle
 stream_throttle = "0.5"
-# asynchronous streams https://crates.io/crates/async-stream
 async-stream = "0.3"
 tempfile = "3"
+rayon = "1.10"
+image = "0.25"
+imageproc = "0.25"
+rust_decimal = "1.38"
+snowflaker = "0.3"
+prometheus = "0.14.0"

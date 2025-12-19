@@ -33,7 +33,7 @@ impl<'a> Aliyun<'a> {
     /// init access key
     ///
     /// ```rust,no_run
-    /// use sms::aliyun::Aliyun;
+    /// use crate::sms::aliyun::Aliyun;
     ///
     /// let aliyun = Aliyun::new("xxxx", "xxxx");
     ///
@@ -48,7 +48,7 @@ impl<'a> Aliyun<'a> {
     /// send_sms
     ///
     /// ```rust,no_run
-    /// use sms::aliyun::Aliyun;
+    /// use crate::sms::aliyun::Aliyun;
     /// use rand::prelude::*;
     ///
     /// let aliyun = Aliyun::new("xxxx", "xxxx");

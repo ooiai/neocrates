@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rediscache::RedisPool;
+use crate::rediscache::RedisPool;
 
 pub const AUTHORIZATION: &str = "Authorization";
 pub const BEARER: &str = "Bearer";

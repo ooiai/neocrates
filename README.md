@@ -1,6 +1,6 @@
 # Neocrates
 
-A comprehensive Rust library providing unified access to essential utilities for web development, AWS integration, database operations, caching, and more. Neocrates acts as a facade crate that re-exports functionality from multiple internal modules while offering a curated `prelude` for convenient imports.
+A comprehensive Rust library providing unified access to essential utilities for web development, AWS integration, database operations, caching, and more. Neocrates acts as a facade crate that re-exports functionality from multiple internal modules.
 
 [![crates.io](https://img.shields.io/crates/v/neocrates.svg)](https://crates.io/crates/neocrates)
 [![docs.rs](https://img.shields.io/docsrs/neocrates)](https://docs.rs/neocrates)
@@ -12,7 +12,6 @@ A comprehensive Rust library providing unified access to essential utilities for
 
 ## 🚀 Features
 
-- **Unified Interface**: Single dependency for multiple capabilities
 - **Modular Design**: Enable only what you need with feature flags
 - **AWS Integration**: S3 and STS clients for Aliyun/Tencent Cloud
 - **Database Helpers**: Diesel integration with connection pooling
@@ -75,21 +74,21 @@ neocrates = { version = "0.1", default-features = false, features = ["awss3", "l
 
 ## 🎯 Usage Examples
 
-### Basic Setup with Prelude
+### Basic Setup
 
 ```rust
-use neocrates::prelude::*;
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialize logger (requires "logger" feature)
     #[cfg(feature = "logger")]
-    init_logger().await;
+    neocrates::logger::run().await;
 
     // Use S3 client (requires "awss3" feature)
     #[cfg(feature = "awss3")]
     {
-        let s3_client = S3Client::new(
+        use neocrates::awss3::aws::AwsClient;
+
+        let s3_client = AwsClient::new(
             "my-bucket",
             "us-east-1",
             "https://s3.amazonaws.com",
@@ -98,18 +97,20 @@ async fn main() -> anyhow::Result<()> {
         ).await?;
 
         // Upload object
-        s3_client.put_object("uploads/file.txt", b"Hello, World!").await?;
+        s3_client.put_object("uploads/file.txt", b"Hello, World!".to_vec()).await?;
     }
 
     // Use Redis cache (requires "rediscache" feature)
     #[cfg(feature = "rediscache")]
     {
+        use neocrates::rediscache::RedisPool;
+
         let redis_pool = RedisPool::from_env().await?;
         let mut conn = redis_pool.get_connection().await?;
 
         // Set and get cache
-        redis::cmd("SET").arg("key").arg("value").query_async(&mut *conn).await?;
-        let value: String = redis::cmd("GET").arg("key").query_async(&mut *conn).await?;
+        neocrates::redis::cmd("SET").arg("key").arg("value").query_async(&mut *conn).await?;
+        let value: String = neocrates::redis::cmd("GET").arg("key").query_async(&mut *conn).await?;
     }
 
     Ok(())
@@ -119,12 +120,12 @@ async fn main() -> anyhow::Result<()> {
 ### AWS STS Clients
 
 ```rust
-use neocrates::prelude::*;
-
 // Aliyun STS Client
 #[cfg(feature = "awssts")]
 async fn aliyun_sts_example() -> anyhow::Result<()> {
-    let aliyun_client = AliyunStsClient::new(
+    use neocrates::awssts::aliyun::StsClient;
+
+    let aliyun_client = StsClient::new(
         "YOUR_ACCESS_KEY_ID",
         "YOUR_ACCESS_KEY_SECRET",
         "acs:ram::123456789012:role/my-role",
@@ -132,7 +133,7 @@ async fn aliyun_sts_example() -> anyhow::Result<()> {
     );
 
     let credentials = aliyun_client.assume_role(3600).await?;
-    println!("Temporary AK: {}", credentials.access_key_id);
+    println!("Temporary AK: {}", credentials.credentials.access_key_id);
 
     Ok(())
 }
@@ -140,15 +141,16 @@ async fn aliyun_sts_example() -> anyhow::Result<()> {
 // Tencent STS Client
 #[cfg(feature = "awssts")]
 async fn tencent_sts_example() -> anyhow::Result<()> {
-    let tencent_client = TencentStsClient::new(
+    use neocrates::awssts::tencent::StsClient;
+
+    let tencent_client = StsClient::new(
         "YOUR_SECRET_ID",
         "YOUR_SECRET_KEY",
         "ap-guangzhou"
     );
 
-    let credentials = tencent_client
-        .get_temp_credentials("my-session", None, Some(7200))
-        .await?;
+    // Note: Check specific method signatures in documentation
+    // let credentials = tencent_client.get_temp_credentials(...).await?;
 
     Ok(())
 }
@@ -169,7 +171,7 @@ async fn database_example() -> anyhow::Result<()> {
     dieselhelper::with_connection(&pool, |conn| {
         // Your database operations here
         // Example: User::find_by_id(conn, 1)?
-        Ok::<(), diesel::result::Error>(())
+        Ok::<(), neocrates::diesel::result::Error>(())
     }).await?;
 
     Ok(())
@@ -198,52 +200,6 @@ async fn web_app() -> anyhow::Result<()> {
 }
 ```
 
-### Direct Module Usage (Alternative)
-
-Instead of using the prelude, you can import modules directly:
-
-For more comprehensive examples covering various use cases, see the [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) file.
-
-```rust
-#[cfg(feature = "awss3")]
-use neocrates::awss3::AwsClient;
-
-#[cfg(feature = "rediscache")]
-use neocrates::rediscache::RedisPool;
-
-#[cfg(feature = "logger")]
-use neocrates::logger;
-```
-
----
-
-## 🏗️ Module Structure
-
-Neocrates provides two ways to access functionality:
-
-### 1. Curated Prelude (Recommended)
-
-- Stable, commonly-used aliases
-- Reduced namespace pollution
-- Easy migration path
-
-```rust
-use neocrates::prelude::*;
-// S3Client, RedisPool, init_logger, etc.
-```
-
-### 2. Namespaced Modules (Full Control)
-
-- Complete access to all functionality
-- Clear module boundaries
-- No ambiguity in imports
-
-```rust
-use neocrates::awss3;
-use neocrates::rediscache;
-use neocrates::logger;
-```
-
 ---
 
 ## ⚙️ Configuration
@@ -254,7 +210,7 @@ Many modules support environment-based configuration:
 
 - **Redis**: `REDIS_URL`, `REDIS_POOL_SIZE`
 - **Database**: `DATABASE_URL`, `DATABASE_POOL_SIZE`
-- **Logging**: `RUST_LOG`, `LOG_FORMAT`
+- **Logging**: `RUST_LOG` (default: "info")
 - **AWS**: Standard AWS environment variables
 
 ### Custom Configuration
@@ -263,13 +219,20 @@ For advanced use cases, most modules accept custom configuration structs:
 
 ```rust
 #[cfg(feature = "rediscache")]
-let config = neocrates::rediscache::RedisConfig {
-    url: "redis://localhost:6379".to_string(),
-    pool_size: 10,
-    connection_timeout: std::time::Duration::from_secs(5),
-};
+{
+    use neocrates::rediscache::{RedisConfig, RedisPool};
 
-let pool = RedisPool::new(config).await?;
+    let config = RedisConfig {
+        url: "redis://localhost:6379".to_string(),
+        max_size: 10,
+        min_idle: Some(1),
+        connection_timeout: std::time::Duration::from_secs(5),
+        idle_timeout: Some(std::time::Duration::from_secs(600)),
+        max_lifetime: Some(std::time::Duration::from_secs(3600)),
+    };
+
+    let pool = RedisPool::new(config).await?;
+}
 ```
 
 ---
@@ -356,11 +319,10 @@ cargo publish -p neocrates --registry crates-io
 
 Contributions are welcome! Please follow these guidelines:
 
-1. **API Stability**: Prefer adding to `prelude` rather than changing existing APIs
-2. **Feature Flags**: New functionality should be behind feature flags when possible
-3. **Testing**: Include tests for new features
-4. **Documentation**: Update README and add doc comments
-5. **Code Quality**: Run `cargo clippy` and `cargo fmt` before submitting
+1. **Feature Flags**: New functionality should be behind feature flags when possible
+2. **Testing**: Include tests for new features
+3. **Documentation**: Update README and add doc comments
+4. **Code Quality**: Run `cargo clippy` and `cargo fmt` before submitting
 
 ### Development Workflow
 

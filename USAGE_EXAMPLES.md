@@ -18,33 +18,12 @@ This document provides comprehensive examples for using Neocrates in various sce
 ### Minimal Setup
 
 ```rust
-use neocrates::prelude::*;
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Initialize logger
+    neocrates::logger::run().await;
+
     // Your application logic here
-    Ok(())
-}
-```
-
-### Selective Features
-
-```toml
-# Cargo.toml
-[dependencies]
-neocrates = { version = "0.1", default-features = false, features = ["logger", "helper"] }
-```
-
-```rust
-// main.rs
-use neocrates::prelude::*;
-
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    #[cfg(feature = "logger")]
-    init_logger().await;
-
-    // Only logger and helper features are available
     Ok(())
 }
 ```
@@ -54,11 +33,11 @@ async fn main() -> anyhow::Result<()> {
 ### S3 Client Initialization
 
 ```rust
-use neocrates::prelude::*;
-
 #[cfg(feature = "awss3")]
-async fn create_s3_client() -> anyhow::Result<S3Client> {
-    let client = S3Client::new(
+async fn create_s3_client() -> anyhow::Result<neocrates::awss3::aws::AwsClient> {
+    use neocrates::awss3::aws::AwsClient;
+
+    let client = AwsClient::new(
         "my-bucket",
         "us-east-1",
         "https://s3.amazonaws.com",
@@ -75,10 +54,12 @@ async fn create_s3_client() -> anyhow::Result<S3Client> {
 ```rust
 #[cfg(feature = "awss3")]
 async fn s3_operations() -> anyhow::Result<()> {
-    let s3 = S3Client::new("bucket", "region", "endpoint", "ak", "sk").await?;
+    use neocrates::awss3::aws::AwsClient;
+
+    let s3 = AwsClient::new("bucket", "region", "endpoint", "ak", "sk").await?;
 
     // Upload file
-    let data = b"Hello, World!";
+    let data = b"Hello, World!".to_vec();
     s3.put_object("uploads/hello.txt", data).await?;
 
     // Download file
@@ -86,29 +67,11 @@ async fn s3_operations() -> anyhow::Result<()> {
     println!("Downloaded: {:?}", String::from_utf8_lossy(&downloaded_data));
 
     // List objects
-    let objects = s3.list_objects("uploads/").await?;
-    for object in objects {
-        println!("Object: {}", object.key);
+    let objects = s3.list_objects(Some("uploads/")).await?;
+    for key in objects {
+        println!("Object: {}", key);
     }
 
-    Ok(())
-}
-```
-
-### Aliyun OSS Example
-
-```rust
-#[cfg(feature = "awss3")]
-async fn aliyun_oss_example() -> anyhow::Result<()> {
-    let oss = S3Client::new(
-        "my-bucket",
-        "cn-hangzhou",
-        "https://oss-cn-hangzhou.aliyuncs.com",
-        "YOUR_ACCESS_KEY",
-        "YOUR_SECRET_KEY"
-    ).await?;
-
-    oss.put_object("test/file.txt", b"Aliyun OSS test").await?;
     Ok(())
 }
 ```
@@ -118,21 +81,23 @@ async fn aliyun_oss_example() -> anyhow::Result<()> {
 ### Aliyun STS
 
 ```rust
-use neocrates::prelude::*;
-
 #[cfg(feature = "awssts")]
 async fn aliyun_sts_workflow() -> anyhow::Result<()> {
-    let sts = AliyunStsClient::new(
+    use neocrates::awssts::aliyun::StsClient;
+    use neocrates::awss3::aws::AwsClient;
+
+    let sts = StsClient::new(
         "LTAI5tEXAMPLE",
         "EXAMPLE_SECRET",
         "acs:ram::123456789012:role/OSSAccessRole",
         "session-name"
     );
 
-    let credentials = sts.assume_role(3600).await?;
+    let response = sts.assume_role(3600).await?;
+    let credentials = response.credentials;
 
     // Use temporary credentials with S3
-    let s3 = S3Client::new(
+    let s3 = AwsClient::new(
         "my-bucket",
         "cn-hangzhou",
         "https://oss-cn-hangzhou.aliyuncs.com",
@@ -140,7 +105,7 @@ async fn aliyun_sts_workflow() -> anyhow::Result<()> {
         &credentials.access_key_secret
     ).await?;
 
-    s3.put_object("temp/upload.txt", b"Temporary upload").await?;
+    s3.put_object("temp/upload.txt", b"Temporary upload".to_vec()).await?;
     Ok(())
 }
 ```
@@ -150,17 +115,17 @@ async fn aliyun_sts_workflow() -> anyhow::Result<()> {
 ```rust
 #[cfg(feature = "awssts")]
 async fn tencent_sts_workflow() -> anyhow::Result<()> {
-    let sts = TencentStsClient::new(
+    use neocrates::awssts::tencent::StsClient;
+
+    let sts = StsClient::new(
         "AKIDEXAMPLE",
         "EXAMPLE_SECRET",
         "ap-guangzhou"
     );
 
-    let credentials = sts
-        .get_temp_credentials("my-session", None, Some(7200))
-        .await?;
-
-    println!("Temporary secret ID: {}", credentials.tmp_secret_id);
+    // Note: Check specific method signatures in documentation
+    // let credentials = sts.get_temp_credentials("my-session", None, Some(7200)).await?;
+    // println!("Temporary secret ID: {}", credentials.tmp_secret_id);
     Ok(())
 }
 ```
@@ -170,32 +135,35 @@ async fn tencent_sts_workflow() -> anyhow::Result<()> {
 ### Basic Redis Setup
 
 ```rust
-use neocrates::prelude::*;
-
 #[cfg(feature = "rediscache")]
 async fn redis_basic() -> anyhow::Result<()> {
+    use neocrates::rediscache::{RedisPool, RedisConfig};
+
     // From environment variables
     let pool = RedisPool::from_env().await?;
 
     // Or with custom config
-    let config = neocrates::rediscache::RedisConfig {
+    let config = RedisConfig {
         url: "redis://localhost:6379".to_string(),
-        pool_size: 10,
+        max_size: 10,
+        min_idle: Some(1),
         connection_timeout: std::time::Duration::from_secs(5),
+        idle_timeout: Some(std::time::Duration::from_secs(600)),
+        max_lifetime: Some(std::time::Duration::from_secs(3600)),
     };
     let pool = RedisPool::new(config).await?;
 
     let mut conn = pool.get_connection().await?;
 
     // Set key
-    redis::cmd("SET")
+    neocrates::redis::cmd("SET")
         .arg("user:1:name")
         .arg("John Doe")
         .query_async(&mut *conn)
         .await?;
 
     // Get key
-    let name: String = redis::cmd("GET")
+    let name: String = neocrates::redis::cmd("GET")
         .arg("user:1:name")
         .query_async(&mut *conn)
         .await?;
@@ -210,29 +178,20 @@ async fn redis_basic() -> anyhow::Result<()> {
 ```rust
 #[cfg(feature = "rediscache")]
 async fn cache_helper_example() -> anyhow::Result<()> {
+    use neocrates::rediscache::RedisPool;
+
     let pool = RedisPool::from_env().await?;
 
     // Set with TTL
-    neocrates::rediscache::set_with_ttl(
-        &pool,
-        "cache:key",
-        "cached_value",
-        std::time::Duration::from_secs(300)
-    ).await?;
+    pool.setex("cache:key", "cached_value", 300).await?;
 
-    // Get or compute
-    let value = neocrates::rediscache::get_or_compute(
-        &pool,
-        "expensive:computation",
-        || async {
-            // Expensive operation
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-            Ok::<String, anyhow::Error>("computed_result".to_string())
-        },
-        std::time::Duration::from_secs(3600)
-    ).await?;
+    // Get
+    let value: Option<String> = pool.get("cache:key").await?;
 
-    println!("Cached value: {}", value);
+    if let Some(v) = value {
+        println!("Cached value: {}", v);
+    }
+
     Ok(())
 }
 ```
@@ -242,38 +201,18 @@ async fn cache_helper_example() -> anyhow::Result<()> {
 ### Diesel Connection Pool
 
 ```rust
-#[cfg(feature = "dieselhelper")]
+#[cfg(feature = "database")]
 async fn database_setup() -> anyhow::Result<()> {
+    use neocrates::dieselhelper;
+
     // Create connection pool
-    let pool = neocrates::dieselhelper::create_pool("DATABASE_URL").await?;
+    let pool = dieselhelper::create_pool("DATABASE_URL").await?;
 
     // Use connection
-    neocrates::dieselhelper::with_connection(&pool, |conn| {
+    dieselhelper::with_connection(&pool, |conn| {
         // Your database operations
         // Example: let users = User::all(conn)?;
-        Ok::<(), diesel::result::Error>(())
-    }).await?;
-
-    Ok(())
-}
-```
-
-### Transaction Management
-
-```rust
-#[cfg(feature = "dieselhelper")]
-async fn transaction_example() -> anyhow::Result<()> {
-    let pool = neocrates::dieselhelper::create_pool("DATABASE_URL").await?;
-
-    neocrates::dieselhelper::with_transaction(&pool, |conn| {
-        // First operation
-        // User::create(conn, &user_data)?;
-
-        // Second operation
-        // Order::create(conn, &order_data)?;
-
-        // If any operation fails, the entire transaction rolls back
-        Ok::<(), diesel::result::Error>(())
+        Ok::<(), neocrates::diesel::result::Error>(())
     }).await?;
 
     Ok(())
@@ -285,11 +224,9 @@ async fn transaction_example() -> anyhow::Result<()> {
 ### Basic Axum App
 
 ```rust
-#[cfg(all(feature = "axum", feature = "middleware"))]
-use neocrates::{axum, middleware, prelude::*};
-
-#[cfg(all(feature = "axum", feature = "middleware"))]
+#[cfg(all(feature = "web", feature = "axum"))]
 async fn web_app() -> anyhow::Result<()> {
+    use neocrates::{axum, middleware};
     use axum::{
         routing::{get, post},
         Json, Router
@@ -322,9 +259,9 @@ async fn web_app() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/health", get(health_check))
-        .route("/users", post(create_user))
-        .layer(middleware::trace_layer())
-        .layer(middleware::cors_layer());
+        .route("/users", post(create_user));
+        // .layer(middleware::trace_layer())
+        // .layer(middleware::cors_layer());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     axum::serve(listener, app).await?;
@@ -333,61 +270,19 @@ async fn web_app() -> anyhow::Result<()> {
 }
 ```
 
-### Error Handling Middleware
-
-```rust
-#[cfg(feature = "response")]
-use neocrates::response::ApiError;
-
-#[cfg(feature = "response")]
-async fn error_handling_example() -> Result<(), ApiError> {
-    // Custom error types
-    let err = ApiError::BadRequest("Invalid input".to_string());
-
-    // Convert from other errors
-    let io_error = std::io::Error::new(std::io::ErrorKind::Other, "IO error");
-    let api_error: ApiError = io_error.into();
-
-    Err(err)
-}
-```
-
 ## Logging Configuration
 
 ### Basic Logging
 
 ```rust
-use neocrates::prelude::*;
-
-#[cfg(feature = "logger")]
 async fn basic_logging() -> anyhow::Result<()> {
     // Initialize with default configuration
-    init_logger().await;
+    neocrates::logger::run().await;
 
-    tracing::info!("Application started");
-    tracing::debug!("Debug information");
-    tracing::error!("An error occurred");
+    neocrates::tracing::info!("Application started");
+    neocrates::tracing::debug!("Debug information");
+    neocrates::tracing::error!("An error occurred");
 
-    Ok(())
-}
-```
-
-### Custom Logging Configuration
-
-```rust
-#[cfg(feature = "logger")]
-async fn custom_logging() -> anyhow::Result<()> {
-    use neocrates::logger::{LoggerConfig, LogFormat};
-
-    let config = LoggerConfig {
-        level: "debug".to_string(),
-        format: LogFormat::Json,
-        service_name: "my-service".to_string(),
-    };
-
-    neocrates::logger::init_with_config(config).await;
-
-    tracing::info!(service = "my-service", "Custom logging initialized");
     Ok(())
 }
 ```
@@ -397,10 +292,8 @@ async fn custom_logging() -> anyhow::Result<()> {
 ### Unified Error Types
 
 ```rust
-use neocrates::prelude::*;
-
 #[cfg(feature = "thiserror")]
-#[derive(thiserror::Error, Debug)]
+#[derive(neocrates::thiserror::Error, Debug)]
 pub enum MyError {
     #[error("Database error: {0}")]
     Database(String),
@@ -414,10 +307,7 @@ pub enum MyError {
 async fn unified_error_handling() -> anyhow::Result<()> {
     // Convert custom errors to anyhow
     let my_error = MyError::Validation("Invalid email".to_string());
-    anyhow::bail!(my_error);
-
-    // Or use directly
-    Err(MyError::Database("Connection failed".to_string()))?;
+    neocrates::anyhow::bail!(my_error);
 }
 ```
 
@@ -444,62 +334,5 @@ fn validate_user_input() -> Result<(), neocrates::validator::ValidationErrors> {
     };
 
     input.validate() // Returns validation errors
-}
-```
-
-## Feature Combination Examples
-
-### Full-Featured Microservice
-
-```rust
-use neocrates::prelude::*;
-
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    // Initialize logging
-    #[cfg(feature = "logger")]
-    init_logger().await;
-
-    // Initialize Redis cache
-    #[cfg(feature = "rediscache")]
-    let redis_pool = RedisPool::from_env().await?;
-
-    // Initialize database
-    #[cfg(feature = "dieselhelper")]
-    let db_pool = neocrates::dieselhelper::create_pool("DATABASE_URL").await?;
-
-    // Start web server
-    #[cfg(all(feature = "axum", feature = "middleware"))]
-    {
-        let app = create_app(redis_pool, db_pool).await?;
-        let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-        axum::serve(listener, app).await?;
-    }
-
-    Ok(())
-}
-
-#[cfg(all(feature = "axum", feature = "middleware", feature = "rediscache", feature = "dieselhelper"))]
-async fn create_app(
-    redis_pool: neocrates::rediscache::RedisPool,
-    db_pool: neocrates::dieselhelper::DbPool,
-) -> anyhow::Result<axum::Router> {
-    use axum::{routing::get, Router};
-
-    let state = AppState { redis_pool, db_pool };
-
-    let app = Router::new()
-        .route("/api/users", get(get_users))
-        .with_state(state)
-        .layer(middleware::trace_layer())
-        .layer(middleware::cors_layer());
-
-    Ok(app)
-}
-
-#[cfg(all(feature = "rediscache", feature = "dieselhelper"))]
-struct AppState {
-    redis_pool: neocrates::rediscache::RedisPool,
-    db_pool: neocrates::dieselhelper::DbPool,
 }
 ```

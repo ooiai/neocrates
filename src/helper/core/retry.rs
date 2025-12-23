@@ -3,12 +3,12 @@
 // use std::time::Duration;
 // use tokio::time::sleep;
 
-// // 定义重试策略的 trait
+// // Define the retry strategy trait
 // pub trait RetryStrategy {
 //     fn next_delay(&mut self) -> Option<Duration>;
 // }
 
-// // 自定义间隔重试策略
+// // Custom interval-based retry strategy
 // pub struct RetryIntervals {
 //     intervals: Vec<Duration>,
 //     current: usize,
@@ -35,7 +35,7 @@
 //     }
 // }
 
-// // 通用的重试函数
+// // Generic retry function
 // pub async fn retry_async<F, Fut, T, E, S>(mut operation: F, mut strategy: S) -> Result<T, E>
 // where
 //     F: FnMut() -> Fut,
@@ -57,7 +57,7 @@
 
 // // #[tokio::main]
 // // async fn main() {
-// //     // 定义自定义间隔重试策略
+// //     // Define a custom interval retry strategy
 // //     let retry_strategy = RetryIntervals::new(vec![
 // //         Duration::from_secs(2),
 // //         Duration::from_secs(60),
@@ -65,14 +65,14 @@
 // //         Duration::from_secs(1800),
 // //     ]);
 
-// //     // 定义需要重试的操作
+// //     // Define the operation that may need retries
 // //     let operation = || async {
 // //         println!("Attempting operation...");
-// //         // 模拟一个可能失败的操作
+// //         // Simulate an operation that may fail
 // //         Err::<(), &str>("Operation failed")
 // //     };
 
-// //     // 使用重试策略执行操作
+// //     // Execute the operation with the retry strategy
 // //     let result = retry_async(operation, retry_strategy).await;
 
 // //     match result {

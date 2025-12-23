@@ -60,7 +60,7 @@ impl<'a> Aliyun<'a> {
     /// );
     ///
     /// let resp = aliyun
-    ///     .send_sms("18888888888", "登录验证", "SMS_123456", code.as_str())
+    ///     .send_sms("18888888888", "Login verification", "SMS_123456", code.as_str())
     ///     .await
     ///     .unwrap();
     ///

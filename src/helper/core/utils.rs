@@ -9,11 +9,11 @@ impl Utils {
         uuid.to_string()
     }
 
-    // 根据输入手机号的长度进行不同的脱敏
-    // 11位手机号：138****1234
-    // 10位手机号：138***1234
-    // 7位手机号：13***1234
-    // 其他长度：不脱敏
+    // Mask phone numbers differently based on input length
+    // 11-digit number: 138****1234
+    // 10-digit number: 138***1234
+    // 7-digit number: 13***1234
+    // Other lengths: no masking
     pub fn mask_phone_number(phone: &str) -> String {
         let len = phone.len();
         match len {
@@ -32,11 +32,11 @@ impl Utils {
                 masked_phone.replace_range(2..5, "***");
                 masked_phone
             }
-            _ => phone.to_string(), // 对于其他长度，不进行脱敏处理
+            _ => phone.to_string(), // For other lengths, do not mask
         }
     }
 
-    // 生成一个随机用户名
+    // Generate a random username
     // pub fn generate_username() -> String {
     //     let mut rng = rand::thread_rng();
     //     let username_length = rng.gen_range(6..=12);
@@ -47,11 +47,11 @@ impl Utils {
     // }
     //
 
-    /// 根据权重加权随机选择一个名称
+    /// Select a name using weighted randomness
     ///
-    /// # 参数
-    /// - `names`: 名称列表
-    /// - `weights`: 权重列表（与名称一一对应）
+    /// # Parameters
+    /// - `names`: list of names
+    /// - `weights`: list of weights (one-to-one with names)
     ///
     /// fn main() {
     //     let names = vec![
@@ -62,11 +62,11 @@ impl Utils {
     //     let weights = vec![1, 3, 6];
 
     //     if let Some(name) = utils::weighted_random::weighted_random_name(&names, &weights) {
-    //         println!("加权随机选中的名称: {}", name);
+    //         println!("Weighted randomly selected name: {}", name);
     //     }
     // }
-    /// # 返回
-    /// - `Option<String>`: 随机选中的名称
+    /// # Returns
+    /// - `Option<String>`: randomly selected name
     pub fn weighted_random_name(names: &[String], weights: &[usize]) -> Option<String> {
         if names.is_empty() || names.len() != weights.len() {
             return None;
@@ -86,23 +86,23 @@ impl Utils {
         None
     }
 
-    /// 从名称列表中随机选取一个名称
+    /// Randomly pick a name from the list
     ///
-    /// # 参数
-    /// - `names`: 名称的切片引用
+    /// # Parameters
+    /// - `names`: slice of names
     ///
-    /// # 返回
-    /// - `Option<String>`: 随机选中的名称，如果列表为空则为 None
+    /// # Returns
+    /// - `Option<String>`: randomly selected name, or None if the list is empty
     pub fn random_name(names: &[String]) -> Option<String> {
-        // 创建线程本地的随机数生成器
+        // Create a thread-local RNG
         let mut rng = rand::rng();
-        // 随机选取一个元素并克隆为 String
+        // Choose a random element and clone as String
         names.choose(&mut rng).cloned()
     }
 
-    /// 尝试将字符串解析为 usize，如果失败则返回默认值
+    /// Parse string into usize; return default if parsing fails
     //
-    /// # 参数
+    /// # Parameters
     pub fn to_usize_or(s: &str, default: usize) -> usize {
         s.trim().parse::<usize>().unwrap_or(default)
     }

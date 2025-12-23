@@ -87,7 +87,7 @@ impl AwsClient {
     }
 
     ///
-    /// 获取对象元数据
+    /// Get object metadata
     ///
     pub async fn head_object(
         &self,

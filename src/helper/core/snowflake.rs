@@ -129,7 +129,7 @@ mod tests {
             .map(|_| {
                 let b = barrier.clone();
                 thread::spawn(move || {
-                    // 让各线程尽量同时开始
+                    // Start all threads at roughly the same time
                     b.wait();
                     let mut v = Vec::with_capacity(per_thread);
                     for _ in 0..per_thread {

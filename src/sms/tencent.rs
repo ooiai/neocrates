@@ -91,7 +91,7 @@ impl Tencent {
         template_param: Vec<&str>,
     ) -> Result<ResponseJson<SendSmsResponse>> {
         let action = "SendSms";
-        // ************* 步骤 1：拼接规范请求串 *************
+        // ************* Step 1: Build canonical request string *************
         let req_json = json!({
             "PhoneNumberSet": phone_numbers,
             "SmsSdkAppId": self.sms_app_id,
@@ -110,7 +110,7 @@ impl Tencent {
             action.to_lowercase(),
             format!("{:x}", hashed_request_payload).to_lowercase()
         );
-        // ************* 步骤 2：拼接待签名字符串 *************
+        // ************* Step 2: Build the string to sign *************
         let time = Local::now();
         let time_date = time.format("%Y-%m-%d").to_string();
         let mut hasher = Sha256::default();
@@ -123,9 +123,9 @@ impl Tencent {
             SERVICE,
             format!("{:x}", hashed_canonical_request).to_lowercase()
         );
-        // ************* 步骤 3：计算签名 *************
+        // ************* Step 3: Calculate signature *************
         let signature_str = self.signature(time_date, string_to_sign);
-        // ************* 步骤 4：拼接 Authorization *************
+        // ************* Step 4: Build Authorization header *************
         let headers = self.builder_headers(region, action, time, signature_str)?;
         let request = Self::create_request();
         let response = request

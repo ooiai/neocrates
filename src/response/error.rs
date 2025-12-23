@@ -285,6 +285,7 @@ impl From<ValidationErrors> for AppError {
     }
 }
 
+#[cfg(any(feature = "database", feature = "full"))]
 impl From<diesel::result::Error> for AppError {
     fn from(err: diesel::result::Error) -> Self {
         tracing::error!("Database error: {}", err);
@@ -292,6 +293,7 @@ impl From<diesel::result::Error> for AppError {
     }
 }
 
+#[cfg(any(feature = "database", feature = "full"))]
 impl From<deadpool_diesel::PoolError> for AppError {
     fn from(err: deadpool_diesel::PoolError) -> Self {
         tracing::error!("Deadpool_diesel Database error: {}", err);
@@ -359,13 +361,13 @@ impl<T, E> AppResultExt<T, E> for Result<T, E> {
 
 // let chat_model: ChatModel = AgentChatService::get_agent_and_model(&app_state, pctx.aid)
 //     .await
-//     .map_err(AppError::client_here)?; // 等价于 |e| AppError::client_here(e)
+//     .map_err(AppError::client_here)?; // equivalent to |e| AppError::client_here(e)
 
 // use crate::response::error::AppResultExt;
 
 // let chat_model = AgentChatService::get_agent_and_model(&app_state, pctx.aid)
 //     .await
-//     .client_context()?; // 自动附带调用行号
+//     .client_context()?; // automatically includes call site location
 
 // impl Error for diesel::result::Error {
 //     fn as_infra_error(&self) -> InfraError {
@@ -389,50 +391,50 @@ impl<T, E> AppResultExt<T, E> for Result<T, E> {
 //     #[test]
 //     fn test_error_handling_examples() {
 //         // 1. Business validation error (422)
-//         let validation_error = AppError::UnprocessableEntity("用户名已存在".to_string());
+//         let validation_error = AppError::UnprocessableEntity("Username already exists".to_string());
 //         assert_eq!(
 //             validation_error.status_code(),
 //             StatusCode::UNPROCESSABLE_ENTITY
 //         );
-//         assert_eq!(validation_error.message(), "用户名已存在");
+//         assert_eq!(validation_error.message(), "Username already exists");
 
 //         // 2. Rate limiting error (429)
-//         let rate_limit_error = AppError::RateLimit("每分钟最多请求60次".to_string());
+//         let rate_limit_error = AppError::RateLimit("Max 60 requests per minute".to_string());
 //         assert_eq!(
 //             rate_limit_error.status_code(),
 //             StatusCode::TOO_MANY_REQUESTS
 //         );
 //         assert_eq!(
 //             rate_limit_error.message(),
-//             "请求频率超限: 每分钟最多请求60次"
+//             "Rate limit exceeded: Max 60 requests per minute"
 //         );
 
 //         // 3. Easter egg response (418)
-//         let easter_egg = AppError::EasterEgg("我是一个可爱的茶壶".to_string());
+//         let easter_egg = AppError::EasterEgg("I am a cute teapot".to_string());
 //         assert_eq!(easter_egg.status_code(), StatusCode::IM_A_TEAPOT);
-//         assert_eq!(easter_egg.message(), "趣味彩蛋: 我是一个可爱的茶壶");
+//         assert_eq!(easter_egg.message(), "Easter egg: I am a cute teapot");
 //     }
 
-//     // 实际使用示例
+//     // Usage example
 //     async fn example_handler() -> Result<String, AppError> {
-//         // 1. 业务规则验证
+//         // 1. Business rule validation
 //         if !is_valid_business_rule() {
 //             return Err(AppError::UnprocessableEntity(
-//                 "输入数据不符合业务规则".to_string(),
+//                 "Input data does not meet business rules".to_string(),
 //             ));
 //         }
 
-//         // 2. 频率限制检查
+//         // 2. Rate limiting check
 //         if is_rate_limited() {
-//             return Err(AppError::RateLimit("请稍后再试".to_string()));
+//             return Err(AppError::RateLimit("Please try again later".to_string()));
 //         }
 
-//         // 3. 趣味彩蛋
+//         // 3. Easter egg
 //         if is_april_first() {
-//             return Err(AppError::EasterEgg("今天是愚人节!".to_string()));
+//             return Err(AppError::EasterEgg("It's April Fools' Day!".to_string()));
 //         }
 
-//         Ok("处理成功".to_string())
+//         Ok("Processed successfully".to_string())
 //     }
 
 //     // Mock functions

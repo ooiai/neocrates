@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use crate::rediscache::RedisPool;
+use crate::middleware::token_store::DynTokenStore;
 
 pub const AUTHORIZATION: &str = "Authorization";
 pub const BEARER: &str = "Bearer";
@@ -8,13 +6,13 @@ pub const BASIC: &str = "Basic";
 
 pub const TOKEN_KEY: &str = ":auth_user:";
 
-// cache auth
+// Cache key segments
 pub const CACHE_AUTH_UID: &str = ":auth:uid:";
 pub const CACHE_AUTH_TOKEN: &str = ":auth:token:";
 pub const CACHE_AUTH_REFRESH_TOKEN: &str = ":auth:refresh_token:";
 pub const CACHE_ADMIN_PERMS: &str = ":perms:admin:";
 
-// token expires
+// Token expiration (seconds)
 pub const EXPIRES_AT: u64 = 60 * 30;
 pub const REFRESH_EXPIRES_AT: u64 = 60 * 60 * 24 * 15;
 
@@ -48,12 +46,12 @@ pub struct AuthModel {
     pub username: String,
 }
 
-/// redis_pool - A reference to the Redis connection pool.
-/// ignore_urls - A vector of URL patterns to ignore no limit.
-/// pms_ignore_urls - A vector of permission management system URL patterns to ignore.
-/// prefix - A string prefix for redis or logging or identification.
+/// token_store - A pluggable token store (Redis or in-memory)
+/// ignore_urls - URL prefixes that bypass the middleware
+/// pms_ignore_urls - Permission system URL prefixes that bypass the middleware
+/// prefix - Key prefix/namespace for caching, logging, or identification
 pub struct MiddlewareConfig {
-    pub redis_pool: Arc<RedisPool>,
+    pub token_store: DynTokenStore,
     pub ignore_urls: Vec<String>,
     pub pms_ignore_urls: Vec<String>,
     pub prefix: String,

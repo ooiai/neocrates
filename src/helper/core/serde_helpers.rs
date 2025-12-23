@@ -20,7 +20,7 @@ pub const MIN_PAGE_NUMBER: i64 = 1;
 pub const MAX_PAGE_NUMBER: i64 = 1000;
 
 ///
-/// 解析 i64 类型
+/// Deserialize i64 type
 ///
 pub fn deserialize_i64<'de, D>(deserializer: D) -> Result<i64, D::Error>
 where
@@ -40,7 +40,7 @@ where
 }
 
 ///
-/// 解析 Vec<i64> 类型
+/// Deserialize Vec<i64> type
 ///
 pub fn deserialize_vec_i64<'de, D>(deserializer: D) -> Result<Vec<i64>, D::Error>
 where
@@ -74,7 +74,7 @@ where
 }
 
 ///
-/// 解析 option i64 类型
+/// Deserialize Option<i64> type
 ///
 pub fn deserialize_option_i64<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
 where
@@ -111,8 +111,8 @@ where
     }
 }
 
-/// Any 类型转 option i64
-/// 支持 null, number, string
+/// Convert any type to Option<i64>
+/// Supports null, number, string
 ///
 pub fn deserialize_option_any_to_i64<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
 where
@@ -140,8 +140,8 @@ where
     }
 }
 
-/// Any 类型转 option f64
-/// 支持 null, number, string
+/// Convert any type to Option<f64>
+/// Supports null, number, string
 pub fn deserialize_option_any_to_f64<'de, D>(deserializer: D) -> Result<Option<f64>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -169,7 +169,7 @@ where
 }
 
 ///
-/// 序列化 i64 类型
+/// Serialize i64 type
 ///
 pub fn serialize_i64<S>(x: &i64, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -180,7 +180,7 @@ where
 }
 
 ///
-/// 序列化 option i64 类型
+/// Serialize Option<i64> type
 ///
 pub fn serialize_option_i64<S>(x: &Option<i64>, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -198,49 +198,49 @@ where
 }
 
 ///
-/// 生成 snowflake id
+/// Generate snowflake id
 ///
 pub fn snowflake_id() -> Option<i64> {
     Some(generate_snowflake_id())
 }
 
 ///
-/// 默认pid值为-1
+/// Default pid value is -1
 ///
 pub fn default_pid() -> i64 {
     -1
 }
 
 ///
-/// 默认pid值为-1
+/// Default pid value is -1
 ///
 pub fn default_option_pid() -> Option<i64> {
     Some(-1)
 }
 
 ///
-/// 默认当前时间
+/// Default current datetime
 ///
 pub fn now_datetime() -> Option<chrono::NaiveDateTime> {
     Some(Local::now().naive_local())
 }
 
 ///
-/// 默认当前页current
+/// Default current page
 ///
 pub fn current() -> Option<i64> {
     Some(1)
 }
 
 ///
-/// 默认当前页zie
+/// Default page size
 ///
 pub fn size() -> Option<i64> {
     Some(10)
 }
 
 ///
-/// 字符串转 i16
+/// String to i16
 ///
 pub fn string_to_i16<'de, D>(deserializer: D) -> Result<i16, D::Error>
 where
@@ -251,7 +251,7 @@ where
 }
 
 ///
-/// 字符串转 i16 option
+/// String to Option<i16>
 ///
 pub fn string_to_i16_option<'de, D>(deserializer: D) -> Result<Option<i16>, D::Error>
 where
@@ -265,7 +265,7 @@ where
 }
 
 ///
-/// 空字符串转 None
+/// Empty string to None
 ///
 // pub fn empty_string_as_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 // where
@@ -289,8 +289,8 @@ where
 }
 
 ///
-/// 验证并规范化分页大小
-/// 如果size不在允许范围内，返回默认值
+/// Validate and normalize page size
+/// If size is not in the allowed range, return the default value
 ///
 pub fn normalize_page_size<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
 where
@@ -307,7 +307,7 @@ where
 }
 
 ///
-/// 验证分页大小
+/// Validate page size
 ///
 pub fn validate_page_size(size: &Option<i64>) -> Result<(), validator::ValidationError> {
     if let Some(s) = size {
@@ -319,8 +319,8 @@ pub fn validate_page_size(size: &Option<i64>) -> Result<(), validator::Validatio
 }
 
 ///
-/// 验证并规范化排序方式
-/// 如果order不在允许范围内，返回默认值
+/// Validate and normalize sort order
+/// If order is not in the allowed list, return the default
 ///
 pub fn normalize_order<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
@@ -338,9 +338,9 @@ where
 }
 
 ///
-/// 验证并规范化当前页码
-/// 如果current小于1，返回1
-/// 如果current大于500，返回500
+/// Validate and normalize current page number
+/// If current is less than MIN_PAGE_NUMBER, return MIN_PAGE_NUMBER
+/// If current is greater than MAX_PAGE_NUMBER, return MIN_PAGE_NUMBER
 ///
 pub fn normalize_current<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
 where
@@ -360,8 +360,8 @@ where
 }
 
 ///
-/// 验证并清理搜索键
-/// 只允许指定的搜索键列表，其他返回None
+/// Validate and sanitize search key
+/// Only allow keys in the provided whitelist; others return None
 ///
 pub fn normalize_search_key_with<'de, D>(
     allowed_keys: &'static [&'static str],
@@ -382,7 +382,7 @@ where
 }
 
 ///
-/// 验证并清理搜索值
+/// Validate and sanitize search value
 ///
 pub fn normalize_search_value<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
@@ -417,7 +417,7 @@ where
 }
 
 ///
-/// 验证并清理英文字符串
+/// Validate English-only string
 ///
 pub fn validate_english(input: &str) -> Result<(), validator::ValidationError> {
     let re = Regex::new(r"^[a-zA-Z]+$").expect("Failed to compile regex");
@@ -428,8 +428,7 @@ pub fn validate_english(input: &str) -> Result<(), validator::ValidationError> {
 }
 
 ///
-/// 验证并清理英文数字字符串
-/// 必须英文开始
+/// Validate alphanumeric string (must start with a letter)
 ///
 pub fn validate_english_number(input: &str) -> Result<(), validator::ValidationError> {
     let re = Regex::new(r"^[A-Za-z][A-Za-z0-9]*$").expect("Failed to compile regex");

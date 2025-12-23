@@ -1,6 +1,6 @@
 use axum::extract::Request;
 
-/// 获取请求的 ip 和 uri
+/// Get the client IP and request URI
 pub fn get_request_host(request: &Request) -> (String, String) {
     let real_ip = request.headers().get("x-real-ip");
     let mut request_ip = if real_ip.is_some() {

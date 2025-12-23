@@ -30,25 +30,25 @@ pub async fn interceptor(
     mut request: Request,
     next: Next,
 ) -> Response {
-    let redis_pool = &config.redis_pool;
+    let token_store = &config.token_store;
     let ignore_urls = &config.ignore_urls;
     let prefix = &config.prefix;
     let pms_ignore_urls = &config.pms_ignore_urls;
 
     let (request_ip, uri) = get_request_host(&mut request);
     tracing::info!(
-        "...「 Middleware interceptor request ip」:{} 「request uri」:{:?} ...",
+        "Middleware interceptor - client_ip: {} uri: {:?}",
         request_ip,
         uri
     );
-    // Ignore Urls check no limit can through
+    // Bypass middleware for URLs matching configured ignore prefixes
     if ignore_urls
         .iter()
         .any(|ignore_url| uri.starts_with(ignore_url))
     {
         return next.run(request).await;
     }
-    // The PMS(Permission Management System) Ignore Urls.
+    // PMS (Permission Management System) ignore URLs
     if pms_ignore_urls
         .iter()
         .any(|ignore_url| uri.starts_with(ignore_url))
@@ -63,7 +63,7 @@ pub async fn interceptor(
         }
         return next.run(request).await;
     }
-    // The Support header and URL parameters two token verification methods
+    // Support two token sources: Authorization header and accessToken query param
     let mut token_opt: Option<String> = None;
     if let Some(auth_header) = request.headers().get(AUTHORIZATION) {
         if let Ok(auth_str) = auth_header.to_str() {
@@ -83,25 +83,26 @@ pub async fn interceptor(
         }
     }
     if let Some(token) = token_opt {
-        let redis_key = format!("{}{}{}", prefix, CACHE_AUTH_TOKEN, token);
-        let auth_model: AuthModel = match redis_pool.get::<_, String>(redis_key).await {
-            Ok(Some(t)) => {
-                let x =
-                    serde_json::from_str(&t).expect("Middleware Failed to deserialize AuthModel");
-                x
-            }
+        let store_key = format!("{}{}{}", prefix, CACHE_AUTH_TOKEN, token);
+        let auth_model: AuthModel = match crate::middleware::token_store::store_get::<AuthModel>(
+            token_store.as_ref(),
+            &store_key,
+        )
+        .await
+        {
+            Ok(Some(m)) => m,
             Ok(None) => return AppError::TokenExpired.into_response(),
             Err(e) => {
-                tracing::warn!("Middleware Failed to get token from redis error: {}", e);
+                tracing::warn!("Middleware failed to fetch token from store: {}", e);
                 return AppError::TokenExpired.into_response();
             }
         };
-        tracing::warn!("Middleware Extracted cache_token: {:?}", &auth_model);
-        // TODO: Get admin role permission
+        tracing::warn!("Middleware extracted cache_token: {:?}", &auth_model);
+        // TODO: Load admin role permission
 
-        // TODO: Get agent role permission
+        // TODO: Load agent role permission
 
-        // rewrite auth model
+        // Rewrite auth model into request extensions
         request.extensions_mut().insert(auth_model);
     } else {
         tracing::warn!(

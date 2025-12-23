@@ -188,6 +188,7 @@ pub use sha2;
 
 // Core and common modules (always available)
 pub mod helper;
+#[cfg(any(feature = "logger", feature = "full"))]
 pub mod logger;
 
 // Web modules

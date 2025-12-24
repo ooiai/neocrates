@@ -1,82 +1,137 @@
-// use std::fmt::Debug;
-// use std::future::Future;
-// use std::time::Duration;
-// use tokio::time::sleep;
+use std::fmt::Debug;
+use std::future::Future;
+use std::time::Duration;
+use tokio::time::sleep;
 
-// // Define the retry strategy trait
-// pub trait RetryStrategy {
-//     fn next_delay(&mut self) -> Option<Duration>;
-// }
+/// Define the retry strategy trait
+pub trait RetryStrategy {
+    fn next_delay(&mut self) -> Option<Duration>;
+}
 
-// // Custom interval-based retry strategy
-// pub struct RetryIntervals {
-//     intervals: Vec<Duration>,
-//     current: usize,
-// }
+/// Custom interval-based retry strategy
+pub struct RetryIntervals {
+    intervals: Vec<Duration>,
+    current: usize,
+}
 
-// impl RetryIntervals {
-//     pub fn new(intervals: Vec<Duration>) -> Self {
-//         Self {
-//             intervals,
-//             current: 0,
-//         }
-//     }
-// }
+impl RetryIntervals {
+    pub fn new(intervals: Vec<Duration>) -> Self {
+        Self {
+            intervals,
+            current: 0,
+        }
+    }
 
-// impl RetryStrategy for RetryIntervals {
-//     fn next_delay(&mut self) -> Option<Duration> {
-//         if self.current < self.intervals.len() {
-//             let delay = self.intervals[self.current];
-//             self.current += 1;
-//             Some(delay)
-//         } else {
-//             None
-//         }
-//     }
-// }
+    /// Create a fixed interval strategy
+    /// count: number of retries (excluding the initial attempt)
+    /// duration: wait time between attempts
+    pub fn fixed(count: usize, duration: Duration) -> Self {
+        Self {
+            intervals: vec![duration; count],
+            current: 0,
+        }
+    }
+}
 
-// // Generic retry function
-// pub async fn retry_async<F, Fut, T, E, S>(mut operation: F, mut strategy: S) -> Result<T, E>
-// where
-//     F: FnMut() -> Fut,
-//     Fut: Future<Output = Result<T, E>>,
-//     E: Debug,
-//     S: RetryStrategy,
-// {
-//     while let Some(delay) = strategy.next_delay() {
-//         match operation().await {
-//             Ok(result) => return Ok(result),
-//             Err(e) => {
-//                 println!("Operation failed: {:?}. Retrying in {:?}", e, delay);
-//                 sleep(delay).await;
-//             }
-//         }
-//     }
-//     operation().await
-// }
+impl RetryStrategy for RetryIntervals {
+    fn next_delay(&mut self) -> Option<Duration> {
+        if self.current < self.intervals.len() {
+            let delay = self.intervals[self.current];
+            self.current += 1;
+            Some(delay)
+        } else {
+            None
+        }
+    }
+}
 
-// // #[tokio::main]
-// // async fn main() {
-// //     // Define a custom interval retry strategy
-// //     let retry_strategy = RetryIntervals::new(vec![
-// //         Duration::from_secs(2),
-// //         Duration::from_secs(60),
-// //         Duration::from_secs(300),
-// //         Duration::from_secs(1800),
-// //     ]);
+/// Generic retry function
+///
+/// # Arguments
+/// * `operation` - A closure that returns a Future. The Future must return a Result.
+/// * `strategy` - The retry strategy (e.g., RetryIntervals).
+///
+/// # Example
+/// ```rust,ignore
+/// use std::time::Duration;
+/// use neocrates::helper::core::retry::{retry_async, RetryIntervals};
+///
+/// async fn do_something() -> Result<(), String> {
+///     // ...
+///     Err("fail".to_string())
+/// }
+///
+/// async fn main() {
+///     // Retry 3 times with 1 second interval
+///     let strategy = RetryIntervals::fixed(3, Duration::from_secs(1));
+///
+///     let result = retry_async(|| do_something(), strategy).await;
+/// }
+/// ```
+pub async fn retry_async<F, Fut, T, E, S>(mut operation: F, mut strategy: S) -> Result<T, E>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, E>>,
+    E: Debug,
+    S: RetryStrategy,
+{
+    loop {
+        match operation().await {
+            Ok(result) => return Ok(result),
+            Err(e) => match strategy.next_delay() {
+                Some(delay) => {
+                    tracing::warn!("Operation failed: {:?}. Retrying in {:?}", e, delay);
+                    sleep(delay).await;
+                }
+                None => return Err(e),
+            },
+        }
+    }
+}
 
-// //     // Define the operation that may need retries
-// //     let operation = || async {
-// //         println!("Attempting operation...");
-// //         // Simulate an operation that may fail
-// //         Err::<(), &str>("Operation failed")
-// //     };
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
-// //     // Execute the operation with the retry strategy
-// //     let result = retry_async(operation, retry_strategy).await;
+    #[tokio::test]
+    async fn test_retry_success() {
+        let counter = Arc::new(AtomicUsize::new(0));
+        let counter_clone = counter.clone();
 
-// //     match result {
-// //         Ok(_) => println!("Operation succeeded"),
-// //         Err(e) => println!("Operation failed after retries: {:?}", e),
-// //     }
-// // }
+        let operation = || async {
+            let count = counter_clone.fetch_add(1, Ordering::SeqCst);
+            if count < 2 {
+                Err("fail")
+            } else {
+                Ok("success")
+            }
+        };
+
+        // Retry 3 times, should succeed on 3rd attempt (index 2)
+        let strategy = RetryIntervals::fixed(3, Duration::from_millis(10));
+        let result = retry_async(operation, strategy).await;
+
+        assert_eq!(result, Ok("success"));
+        assert_eq!(counter.load(Ordering::SeqCst), 3);
+    }
+
+    #[tokio::test]
+    async fn test_retry_fail() {
+        let counter = Arc::new(AtomicUsize::new(0));
+        let counter_clone = counter.clone();
+
+        let operation = || async {
+            counter_clone.fetch_add(1, Ordering::SeqCst);
+            Err::<(), &str>("always fail")
+        };
+
+        // Retry 2 times (total 3 attempts)
+        let strategy = RetryIntervals::fixed(2, Duration::from_millis(10));
+        let result = retry_async(operation, strategy).await;
+
+        assert!(result.is_err());
+        assert_eq!(counter.load(Ordering::SeqCst), 3);
+    }
+}

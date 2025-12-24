@@ -10,7 +10,10 @@ use serde::{
 use serde_json::Value;
 use std::fmt::Debug;
 
-use super::{hashid, snowflake::generate_snowflake_id};
+use super::{
+    hashid,
+    snowflake::{generate_snowflake_id, generate_sonyflake_id},
+};
 
 pub const PAGE_SIZES: [i64; 7] = [10, 20, 30, 40, 50, 100, 200];
 pub const DEFAULT_PAGE_SIZE: i64 = 10;
@@ -202,6 +205,13 @@ where
 ///
 pub fn snowflake_id() -> Option<i64> {
     Some(generate_snowflake_id())
+}
+
+///
+/// Generate sonyflake id
+///
+pub fn sonyflake_id() -> Option<i64> {
+    Some(generate_sonyflake_id())
 }
 
 ///

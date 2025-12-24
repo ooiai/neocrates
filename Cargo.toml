@@ -1,6 +1,6 @@
 [package]
 name = "neocrates"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["hamerkillers@gmail.com"]
 edition = "2024"
 description = "A comprehensive Rust library for various utilities and helpers"
@@ -91,6 +91,7 @@ strum = "0.27"
 strum_macros = "0.27"
 validator = "0.20"
 bon = "3.8"
+sonyflake = "0.4"
 
 # Web
 axum = { version = "0.8", features = ["macros"], optional = true }

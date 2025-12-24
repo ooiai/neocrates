@@ -91,14 +91,72 @@ static ID_GENERATOR: Lazy<Mutex<SnowflakeIdGenerator>> = Lazy::new(|| {
     Mutex::new(generator)
 });
 
+/// Generate a unique ID using the standard Snowflake algorithm.
+///
+/// This function returns a `u64` identifier.
+/// It uses a static `ID_GENERATOR` initialized with worker_id=1 and data_center_id=1.
+///
+/// # Returns
+/// - `u64`: A unique snowflake ID.
+///
+/// # Example
+/// ```rust
+/// use neocrates::helper::core::snowflake::generate_snowflake_uid;
+///
+/// let uid = generate_snowflake_uid();
+/// println!("Generated UID: {}", uid);
+/// ```
 pub fn generate_snowflake_uid() -> u64 {
     let mut generator = ID_GENERATOR.lock().expect("Failed to lock ID generator");
     generator.generate()
 }
 
+/// Generate a unique ID using the standard Snowflake algorithm.
+///
+/// This function returns an `i64` identifier, which is useful for compatibility with systems
+/// that prefer signed 64-bit integers (e.g., some databases or JSON parsers).
+/// It uses a static `ID_GENERATOR` initialized with worker_id=1 and data_center_id=1.
+///
+/// # Returns
+/// - `i64`: A unique snowflake ID.
+///
+/// # Example
+/// ```rust
+/// use neocrates::helper::core::snowflake::generate_snowflake_id;
+///
+/// let id = generate_snowflake_id();
+/// println!("Generated ID: {}", id);
+/// ```
 pub fn generate_snowflake_id() -> i64 {
     let mut generator = ID_GENERATOR.lock().expect("Failed to lock ID generator");
     generator.generate() as i64
+}
+
+static SONYFLAKE: Lazy<Mutex<sonyflake::Sonyflake>> = Lazy::new(|| {
+    let sf = sonyflake::Sonyflake::new().unwrap();
+    Mutex::new(sf)
+});
+
+/// Generate a unique ID using the Sonyflake algorithm.
+///
+/// Sonyflake is a distributed unique ID generator inspired by Twitter's Snowflake.
+/// It has a longer lifetime (174 years) and can work on more distributed machines.
+/// This implementation automatically configures the machine ID based on the host's IP address,
+/// making it suitable for distributed environments (e.g., Kubernetes, Docker).
+///
+/// # Returns
+/// - `i64`: A unique sonyflake ID.
+///
+/// # Example
+/// ```rust
+/// use neocrates::helper::core::snowflake::generate_sonyflake_id;
+///
+/// let id = generate_sonyflake_id();
+/// println!("Generated Sonyflake ID: {}", id);
+/// ```
+pub fn generate_sonyflake_id() -> i64 {
+    let sf = SONYFLAKE.lock().unwrap();
+    sf.next_id().unwrap() as i64
 }
 
 #[cfg(test)]
@@ -160,6 +218,21 @@ mod tests {
                 all[i],
                 all[i - 1]
             );
+        }
+    }
+
+    #[test]
+    fn sonyflake_monotonic_and_unique() {
+        let mut prev = generate_sonyflake_id();
+        for _ in 0..1000 {
+            let id = generate_sonyflake_id();
+            assert!(
+                id > prev,
+                "sonyflake not strictly increasing: prev={}, curr={}",
+                prev,
+                id
+            );
+            prev = id;
         }
     }
 }

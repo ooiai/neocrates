@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use url::form_urlencoded;
 
 use crate::{
-    middleware::{
+    middlewares::{
         ip::get_request_host,
         models::{AUTHORIZATION, AuthModel, BASIC, BEARER, CACHE_AUTH_TOKEN, MiddlewareConfig},
     },
@@ -84,7 +84,7 @@ pub async fn interceptor(
     }
     if let Some(token) = token_opt {
         let store_key = format!("{}{}{}", prefix, CACHE_AUTH_TOKEN, token);
-        let auth_model: AuthModel = match crate::middleware::token_store::store_get::<AuthModel>(
+        let auth_model: AuthModel = match crate::middlewares::token_store::store_get::<AuthModel>(
             token_store.as_ref(),
             &store_key,
         )

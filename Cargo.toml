@@ -1,6 +1,6 @@
 [package]
 name = "neocrates"
-version = "0.1.9"
+version = "0.1.10"
 authors = ["hamerkillers@gmail.com"]
 edition = "2024"
 description = "A comprehensive Rust library for various utilities and helpers"
@@ -9,7 +9,7 @@ repository = "https://github.com/ooiai/neocrates.git"
 readme = "README.md"
 
 [features]
-default = []
+default = ["full"]
 logger = ["dep:tracing-subscriber"]
 web = [
     "dep:axum",
@@ -146,3 +146,6 @@ rust_decimal = "1.38"
 snowflaker = "0.3"
 prometheus = "0.14.0"
 schemars = "1"
+
+[package.metadata.rust-analyzer]
+cargo.features = ["full"]

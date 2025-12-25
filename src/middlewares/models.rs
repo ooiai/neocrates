@@ -1,4 +1,4 @@
-use crate::middleware::token_store::DynTokenStore;
+use crate::middlewares::token_store::DynTokenStore;
 
 pub const AUTHORIZATION: &str = "Authorization";
 pub const BEARER: &str = "Bearer";

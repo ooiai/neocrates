@@ -1,6 +1,6 @@
 use axum::{
     body::{Body, Bytes},
-    extract::Request,
+    extract::{Request, State},
     middleware::Next,
     response::{IntoResponse, Response},
 };
@@ -26,7 +26,7 @@ use crate::{
 /// A Response after processing the request.
 ///
 pub async fn interceptor(
-    config: &Arc<MiddlewareConfig>,
+    config: State<Arc<MiddlewareConfig>>,
     mut request: Request,
     next: Next,
 ) -> Response {

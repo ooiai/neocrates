@@ -1,0 +1,18 @@
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "cargo": {
+          "features": ["full"],
+          "allFeatures": false,
+        },
+        "check": {
+          "workspace": true,
+        },
+        "diagnostics": {
+          "experimental": { "enable": true },
+        },
+      },
+    },
+  },
+}

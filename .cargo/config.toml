@@ -1,0 +1,5 @@
+[alias]
+check-full = "check --features full --all-targets"
+build-full = "build --features full --all-targets"
+test-full  = "test  --features full --all-targets"
+run-full   = "run   --features full"

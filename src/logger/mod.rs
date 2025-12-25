@@ -1,4 +1,5 @@
-use chrono::{DateTime, Local, Utc};
+use chrono::Local;
+use serde::{Deserialize, Serialize};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
@@ -9,32 +10,95 @@ struct LocalTime;
 
 impl tracing_subscriber::fmt::time::FormatTime for LocalTime {
     fn format_time(&self, w: &mut tracing_subscriber::fmt::format::Writer<'_>) -> std::fmt::Result {
-        let now = Utc::now();
-        let local_now: DateTime<Local> = now.with_timezone(&Local);
-        write!(w, "{}", local_now.format("%Y-%m-%d %H:%M:%S"))
+        write!(w, "{}", Local::now().format("%Y-%m-%d %H:%M:%S"))
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogConfig {
+    #[serde(rename = "rust-log")]
+    pub log: LogSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct LogSettings {
+    #[serde(default = "default_level")]
+    pub level: String,
+    #[serde(default = "default_true")]
+    pub target: bool,
+    #[serde(default = "default_true")]
+    pub thread_ids: bool,
+    #[serde(default = "default_true")]
+    pub line_number: bool,
+    #[serde(default = "default_true")]
+    pub file: bool,
+    #[serde(default = "default_true")]
+    pub pretty: bool,
+}
+
+impl LogConfig {
+    pub fn load(path: &str) -> anyhow::Result<Self> {
+        let f = std::fs::File::open(path)?;
+        let config: LogConfig = serde_yaml::from_reader(f)?;
+        Ok(config)
+    }
+}
+
+impl Default for LogConfig {
+    fn default() -> Self {
+        Self {
+            log: LogSettings::default(),
+        }
+    }
+}
+
+impl Default for LogSettings {
+    fn default() -> Self {
+        Self {
+            level: default_level(),
+            target: true,
+            thread_ids: true,
+            line_number: true,
+            file: true,
+            pretty: true,
+        }
+    }
+}
+
+fn default_level() -> String {
+    "info".to_string()
+}
+
+fn default_true() -> bool {
+    true
+}
+
+pub fn init(config: LogConfig) {
+    let config = config.log;
+    let env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.level));
+
+    let builder = FmtSubscriber::builder()
+        .with_timer(LocalTime)
+        .with_env_filter(env_filter)
+        .with_span_events(FmtSpan::CLOSE)
+        .with_target(config.target)
+        .with_thread_ids(config.thread_ids)
+        .with_line_number(config.line_number)
+        .with_file(config.file);
+
+    if config.pretty {
+        let subscriber = builder.pretty().finish();
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("setting default subscriber failed");
+    } else {
+        let subscriber = builder.finish();
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("setting default subscriber failed");
     }
 }
 
 pub async fn run() {
-    // let env_filter = std::env::var("RUST_LOG").unwrap_or_else(|_| panic!("RUST_LOG must be set!"));
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
-
-    // a builder for `FmtSubscriber`.
-    let subscriber = FmtSubscriber::builder()
-        .with_timer(LocalTime)
-        .with_env_filter(env_filter)
-        .with_span_events(FmtSpan::CLOSE)
-        // .with_max_level(Level::DEBUG)
-        // .with_max_level(Level::ERROR)
-        // .with_max_level(Level::WARN)
-        // .with_max_level(Level::TRACE)
-        // completes the builder.
-        .with_target(true)
-        .with_thread_ids(true)
-        .with_line_number(true)
-        .with_file(true)
-        .pretty()
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    init(LogConfig::default());
 }

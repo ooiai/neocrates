@@ -1,6 +1,6 @@
 [package]
 name = "neocrates"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["hamerkillers@gmail.com"]
 edition = "2024"
 description = "A comprehensive Rust library for various utilities and helpers"
@@ -95,8 +95,9 @@ sonyflake = "0.4"
 
 # Web
 axum = { version = "0.8", features = ["macros"], optional = true }
-tower = { version = "0.5", optional = true }
-tower-http = { version = "0.6", optional = true }
+axum-extra = { version = "0.10" , features = ["typed-header"], optional = true }
+tower = { version = "0.5", features = ["full"], optional = true }
+tower-http = { version = "0.6", features = ["full"], optional = true }
 hyper = { version = "1.6", features = ["full"], optional = true }
 reqwest = { version = "0.12", features = ["gzip", "json"], optional = true }
 url = { version = "2.5.4", optional = true }

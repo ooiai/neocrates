@@ -3,7 +3,7 @@ use serde_yaml;
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub fn load_config_from_file<T, P>(path: P) -> Option<T>
 where
@@ -53,6 +53,21 @@ where
     load_config_from_file(config_path)
 }
 
+/// Helper function to find a file by searching upwards from the current directory.
+fn find_config_path(file_name: &str) -> Option<PathBuf> {
+    let mut current_dir = env::current_dir().ok()?;
+    loop {
+        let file_path = current_dir.join(file_name);
+        if file_path.exists() {
+            return Some(file_path);
+        }
+        if !current_dir.pop() {
+            break;
+        }
+    }
+    None
+}
+
 /// Loads configuration from environment-specific or default YAML files.
 ///
 /// This function searches for configuration files in the following order:
@@ -66,6 +81,9 @@ where
 /// 8. `config.yaml`
 ///
 /// Where `ENV` is the value of the environment variable "ENV".
+///
+/// For each candidate filename, the function searches recursively upwards from the
+/// current working directory to the root directory until the file is found.
 ///
 /// # Returns
 /// `Some(T)` if a valid configuration file is found and parsed successfully,
@@ -112,8 +130,10 @@ where
     candidates.push("config.yaml".to_string());
 
     for file_name in candidates {
-        if let Some(config) = load_config_from_file::<T, _>(&file_name) {
-            return Some(config);
+        if let Some(path) = find_config_path(&file_name) {
+            if let Some(config) = load_config_from_file::<T, _>(path) {
+                return Some(config);
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 [package]
 name = "neocrates"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["hamerkillers@gmail.com"]
 edition = "2024"
 description = "A comprehensive Rust library for various utilities and helpers"

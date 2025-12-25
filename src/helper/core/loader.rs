@@ -40,7 +40,7 @@ where
 ///     debug_mode: bool,
 /// }
 ///
-/// if let Some(config) = loader::load_named_config::<AppConfig>(Path::new("custom-config.yml")) {
+/// if let Some(config) = neocrates::helper::core::loader::load_named_config::<AppConfig>(Path::new("custom-config.yml")) {
 ///     println!("Server port: {}", config.server_port);
 /// } else {
 ///     eprintln!("Failed to load configuration");
@@ -58,11 +58,14 @@ where
 /// This function searches for configuration files in the following order:
 /// 1. `application.{ENV}.yml`
 /// 2. `application.{ENV}.yaml`
-/// 3. `application.yml`
-/// 4. `application.yaml`
+/// 3. `config.{ENV}.yml`
+/// 4. `config.{ENV}.yaml`
+/// 5. `application.yml`
+/// 6. `application.yaml`
+/// 7. `config.yml`
+/// 8. `config.yaml`
 ///
-/// Where `ENV` is the value of the environment variable "ENV". If "ENV" is not set,
-/// it defaults to searching `config.yml` and `config.yaml`.
+/// Where `ENV` is the value of the environment variable "ENV".
 ///
 /// # Returns
 /// `Some(T)` if a valid configuration file is found and parsed successfully,
@@ -81,7 +84,7 @@ where
 /// // Set ENV variable (optional)
 /// std::env::set_var("ENV", "production");
 ///
-/// if let Some(config) = loader::load_config::<AppConfig>() {
+/// if let Some(config) = neocrates::helper::core::loader::load_config::<AppConfig>() {
 ///     println!("Server port: {}", config.server_port);
 /// } else {
 ///     eprintln!("Failed to load configuration");
@@ -92,19 +95,21 @@ where
     T: for<'de> Deserialize<'de>,
 {
     let env_var = env::var("ENV").ok();
+    let mut candidates = Vec::new();
 
-    let candidates = match env_var.as_deref() {
-        Some(env) if !env.is_empty() => {
-            vec![
-                format!("application.{}.yml", env),
-                format!("application.{}.yaml", env),
-            ]
+    if let Some(env) = env_var.as_deref() {
+        if !env.is_empty() {
+            candidates.push(format!("application.{}.yml", env));
+            candidates.push(format!("application.{}.yaml", env));
+            candidates.push(format!("config.{}.yml", env));
+            candidates.push(format!("config.{}.yaml", env));
         }
-        _ => vec![
-            "application.yml".to_string(),
-            "application.yaml".to_string(),
-        ],
-    };
+    }
+
+    candidates.push("application.yml".to_string());
+    candidates.push("application.yaml".to_string());
+    candidates.push("config.yml".to_string());
+    candidates.push("config.yaml".to_string());
 
     for file_name in candidates {
         if let Some(config) = load_config_from_file::<T, _>(&file_name) {

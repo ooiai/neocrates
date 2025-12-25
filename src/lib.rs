@@ -193,7 +193,7 @@ pub mod logger;
 
 // Web modules
 #[cfg(any(feature = "web", feature = "full"))]
-pub mod middleware;
+pub mod middlewares;
 #[cfg(any(feature = "web", feature = "full"))]
 pub mod response;
 

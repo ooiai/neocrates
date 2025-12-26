@@ -285,7 +285,7 @@ impl From<ValidationErrors> for AppError {
     }
 }
 
-#[cfg(any(feature = "database", feature = "full"))]
+#[cfg(any(feature = "diesel", feature = "full"))]
 impl From<diesel::result::Error> for AppError {
     fn from(err: diesel::result::Error) -> Self {
         tracing::error!("Database error: {}", err);
@@ -293,7 +293,7 @@ impl From<diesel::result::Error> for AppError {
     }
 }
 
-#[cfg(any(feature = "database", feature = "full"))]
+#[cfg(any(feature = "diesel", feature = "full"))]
 impl From<deadpool_diesel::PoolError> for AppError {
     fn from(err: deadpool_diesel::PoolError) -> Self {
         tracing::error!("Deadpool_diesel Database error: {}", err);

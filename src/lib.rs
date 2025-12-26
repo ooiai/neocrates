@@ -33,11 +33,11 @@
 //! aws = ["awss3", "awssts", "dep:aws-config", "dep:aws-types"]
 //! awss3 = ["dep:aws-sdk-s3", "dep:aws-config", "dep:aws-types"]
 //! awssts = ["dep:aws-sdk-sts", "dep:aws-config", "dep:aws-types"]
-//! database = ["dep:diesel", "dep:deadpool", "dep:deadpool-diesel", "dep:diesel_migrations"]
+//! diesel = ["dep:diesel", "dep:deadpool", "dep:deadpool-diesel", "dep:diesel_migrations"]
 //! redis = ["dep:redis", "dep:bb8", "dep:bb8-redis", "dep:moka"]
 //! crypto = ["dep:argon2", "dep:hmac", "dep:ring", "dep:sha2"]
 //! sms = [] # If HTTP is needed, enable together with "web"
-//! full = ["web", "aws", "awss3", "awssts", "database", "redis", "crypto", "sms"]
+//! full = ["web", "aws", "awss3", "awssts", "diesel", "redis", "crypto", "sms"]
 //!
 //! [dependencies]
 //! # Mark related dependencies as optional
@@ -144,16 +144,16 @@ pub use aws_sdk_s3;
 pub use aws_sdk_sts;
 
 // =============================
-// Database re-exports (feature)
+// Database diesel re-exports (feature)
 // =============================
 
-#[cfg(any(feature = "database", feature = "full"))]
+#[cfg(any(feature = "diesel", feature = "full"))]
 pub use deadpool;
-#[cfg(any(feature = "database", feature = "full"))]
+#[cfg(any(feature = "diesel", feature = "full"))]
 pub use deadpool_diesel;
-#[cfg(any(feature = "database", feature = "full"))]
+#[cfg(any(feature = "diesel", feature = "full"))]
 pub use diesel;
-#[cfg(any(feature = "database", feature = "full"))]
+#[cfg(any(feature = "diesel", feature = "full"))]
 pub use diesel_migrations;
 
 // =========================
@@ -204,7 +204,7 @@ pub mod awss3;
 pub mod awssts;
 
 // Database
-#[cfg(any(feature = "database", feature = "full"))]
+#[cfg(any(feature = "diesel", feature = "full"))]
 pub mod dieselhelper;
 
 // Redis

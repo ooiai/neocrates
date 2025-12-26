@@ -1,6 +1,6 @@
 [package]
 name = "neocrates"
-version = "0.1.11"
+version = "0.1.12"
 authors = ["hamerkillers@gmail.com"]
 edition = "2024"
 description = "A comprehensive Rust library for various utilities and helpers"
@@ -47,11 +47,12 @@ awssts = [
     "dep:hmac",
     "dep:sha2",
 ]
-database = [
+diesel = [
     "dep:diesel",
     "dep:deadpool",
     "dep:deadpool-diesel",
     "dep:diesel_migrations",
+    "dep:url",
 ]
 redis = [
     "dep:redis",
@@ -66,7 +67,7 @@ crypto = [
     "dep:sha2",
 ]
 sms = []
-full = ["web", "aws", "awss3", "awssts", "database", "redis", "crypto", "sms", "logger"]
+full = ["web", "aws", "awss3", "awssts", "diesel", "redis", "crypto", "sms", "logger"]
 
 [dependencies]
 # Core

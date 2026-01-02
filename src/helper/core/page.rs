@@ -13,3 +13,11 @@ pub struct PageResponse<T> {
     pub current: i64,
     pub size: i64,
 }
+
+pub fn to_offset_limit(current: usize, size: usize) -> (i64, i64) {
+    let current = if current == 0 { 1 } else { current };
+    let size = if size == 0 { 10 } else { size };
+    let offset = ((current - 1) * size) as i64;
+    let limit = size as i64;
+    (offset, limit)
+}

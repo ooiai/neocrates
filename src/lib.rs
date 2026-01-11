@@ -198,6 +198,8 @@ pub mod middlewares;
 pub mod response;
 
 // AWS
+#[cfg(any(feature = "aws", feature = "awssts", feature = "full"))]
+pub mod aws;
 #[cfg(any(feature = "aws", feature = "awss3", feature = "full"))]
 pub mod awss3;
 #[cfg(any(feature = "aws", feature = "awssts", feature = "full"))]

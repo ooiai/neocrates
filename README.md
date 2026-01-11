@@ -297,6 +297,9 @@ cargo publish -p neocrates --dry-run
 
 # Publish to crates.io
 cargo publish -p neocrates --registry crates-io
+
+# Publish all workspace crates
+make publish m="publish:v0.1.16
 ```
 
 ### Version Management

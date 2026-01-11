@@ -38,12 +38,14 @@ pub struct AwsConfig {
     pub rustfs_endpoint: String,
     pub rustfs_region_id: String,
     pub rustfs_bucket: String,
+    pub rustfs_expiration: u32,
 
     pub minio_accesskey_id: String,
     pub minio_accesskey_secret: String,
     pub minio_endpoint: String,
     pub minio_region_id: String,
     pub minio_bucket: String,
+    pub minio_expiration: u32,
 }
 
 pub struct CosService;

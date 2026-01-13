@@ -96,7 +96,7 @@ where
         match Json::<T>::from_request(req, state).await {
             Ok(Json(value)) => Ok(LoggedJson(value)),
             Err(rejection) => {
-                let error_message = format!("JSON 反序列化失败: {:?}", rejection);
+                let error_message = format!("JSON deserialization failed: {:?}", rejection);
                 tracing::error!("{}", error_message);
 
                 // 返回详细的错误信息
@@ -184,31 +184,31 @@ where
                     JsonRejection::JsonDataError(err) => (
                         StatusCode::UNPROCESSABLE_ENTITY,
                         "json_data_error",
-                        format!("无效的 JSON 数据: {}", err),
+                        format!("Invalid JSON data: {}", err),
                     ),
                     JsonRejection::JsonSyntaxError(err) => (
                         StatusCode::BAD_REQUEST,
                         "json_syntax_error",
-                        format!("JSON 语法错误: {}", err),
+                        format!("JSON syntax error: {}", err),
                     ),
                     JsonRejection::MissingJsonContentType(err) => (
                         StatusCode::UNSUPPORTED_MEDIA_TYPE,
                         "missing_content_type",
-                        format!("缺少 Content-Type: application/json 请求头: {}", err),
+                        format!("Missing Content-Type: application/json header: {}", err),
                     ),
                     JsonRejection::BytesRejection(err) => (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         "bytes_rejection",
-                        format!("无法读取请求体: {}", err),
+                        format!("Failed to read request body: {}", err),
                     ),
                     _ => (
                         StatusCode::BAD_REQUEST,
                         "unknown_error",
-                        format!("未知错误: {:?}", rejection),
+                        format!("Unknown error: {:?}", rejection),
                     ),
                 };
 
-                tracing::error!("JSON 提取失败 [{}]: {}", error_type, message);
+                tracing::error!("JSON extraction failed [{}]: {}", error_type, message);
 
                 let response = (
                     status,

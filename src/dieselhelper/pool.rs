@@ -100,10 +100,8 @@ impl DieselPool {
                 DatabaseError::InitializationError(format!("Failed to build pool: {}", e))
             })?;
 
-        // Set the timezone to UTC for all connections and enable dev-only server-side SQL logging
+        // Set the timezone to UTC for all connections
         let conn = pool.get().await.map_err(DatabaseError::ConnectionError)?;
-        // Log and set timezone to UTC
-        info!("SQL: SET TIME ZONE 'UTC'");
         conn.interact(|conn| sql_query("SET TIME ZONE 'UTC'").execute(conn))
             .await
             .map_err(DatabaseError::InteractionError)?
@@ -113,19 +111,6 @@ impl DieselPool {
                     e
                 ))
             })?;
-        // In development builds, optionally enable PostgreSQL server-side SQL logging for this session
-        if cfg!(debug_assertions) && std::env::var("PG_LOG_STATEMENT").map_or(true, |v| v != "0") {
-            info!("SQL: SET log_statement = 'all'");
-            conn.interact(|conn| sql_query("SET log_statement = 'all'").execute(conn))
-                .await
-                .map_err(DatabaseError::InteractionError)?
-                .map_err(|e| {
-                    DatabaseError::InitializationError(format!(
-                        "Failed to enable server-side SQL logging: {}",
-                        e
-                    ))
-                })?;
-        }
 
         Ok(Self { pool })
     }
@@ -137,40 +122,10 @@ impl DieselPool {
 
     /// Get a connection object from the pool.
     pub async fn connection(&self) -> DatabaseResult<deadpool::managed::Object<Manager>> {
-        let conn = self
-            .pool
+        self.pool
             .get()
             .await
-            .map_err(DatabaseError::ConnectionError)?;
-
-        // Ensure per-connection session settings:
-        // 1) Set timezone to UTC
-        info!("SQL: SET TIME ZONE 'UTC'");
-        conn.interact(|conn| sql_query("SET TIME ZONE 'UTC'").execute(conn))
-            .await
-            .map_err(DatabaseError::InteractionError)?
-            .map_err(|e| {
-                DatabaseError::InitializationError(format!(
-                    "Failed to execute timezone query: {}",
-                    e
-                ))
-            })?;
-
-        // 2) In development builds, optionally enable server-side SQL logging
-        if cfg!(debug_assertions) && std::env::var("PG_LOG_STATEMENT").map_or(true, |v| v != "0") {
-            info!("SQL: SET log_statement = 'all'");
-            conn.interact(|conn| sql_query("SET log_statement = 'all'").execute(conn))
-                .await
-                .map_err(DatabaseError::InteractionError)?
-                .map_err(|e| {
-                    DatabaseError::InitializationError(format!(
-                        "Failed to enable server-side SQL logging: {}",
-                        e
-                    ))
-                })?;
-        }
-
-        Ok(conn)
+            .map_err(DatabaseError::ConnectionError)
     }
 
     /// Check the status of the database connection.

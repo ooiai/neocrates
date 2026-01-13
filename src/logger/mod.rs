@@ -35,6 +35,9 @@ pub struct LogSettings {
     pub file: bool,
     #[serde(default = "default_true")]
     pub pretty: bool,
+    // 是否打印 SQL
+    #[serde(default)]
+    pub sql_log: Option<bool>,
 }
 
 impl LogConfig {
@@ -62,6 +65,7 @@ impl Default for LogSettings {
             line_number: true,
             file: true,
             pretty: true,
+            sql_log: Some(true),
         }
     }
 }
@@ -76,6 +80,9 @@ fn default_true() -> bool {
 
 pub fn init(config: LogConfig) {
     let config = config.log;
+    if let Some(on) = config.sql_log {
+        crate::dieselhelper::logging::set_sql_logging(on);
+    }
     let env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.level));
 

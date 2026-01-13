@@ -1,3 +1,5 @@
+#[cfg(any(feature = "web", feature = "full"))]
+pub mod axum_extractor;
 pub mod engine_pool;
 pub mod enums;
 pub mod hashid;

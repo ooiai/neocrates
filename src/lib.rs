@@ -78,12 +78,15 @@
 
 pub use anyhow;
 pub use async_trait;
+pub use base64;
 pub use bon;
 pub use chrono;
 pub use dashmap;
+pub use hex;
 pub use indexmap;
 pub use lazy_static;
 pub use log;
+pub use md5;
 pub use once_cell;
 pub use rand;
 pub use regex;
@@ -95,6 +98,10 @@ pub use tokio;
 pub use tracing;
 pub use uuid;
 pub use validator;
+
+// Image processing (always available as dependencies are not optional)
+pub use image;
+pub use imageproc;
 
 // =========================
 // Web re-exports (feature)
@@ -220,3 +227,7 @@ pub mod crypto;
 // SMS (if it depends on HTTP/network requests, enable together with "web")
 #[cfg(any(feature = "sms", feature = "full"))]
 pub mod sms;
+
+// Captcha (requires web and redis features for full functionality)
+#[cfg(any(feature = "web", feature = "full"))]
+pub mod captcha;

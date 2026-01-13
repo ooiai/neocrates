@@ -84,8 +84,9 @@ pub fn log_sql_str(sql: &str) {
 #[macro_export]
 macro_rules! diesel_execute {
     ($conn:expr, $q:expr) => {{
-        $crate::dieselhelper::logging::log_query(&$q);
-        $q.execute($conn)
+        let __diesel_q = $q;
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
+        __diesel_q.execute($conn)
     }};
 }
 
@@ -96,8 +97,9 @@ macro_rules! diesel_execute {
 #[macro_export]
 macro_rules! diesel_load {
     ($conn:expr, $q:expr, $ty:ty) => {{
-        $crate::dieselhelper::logging::log_query(&$q);
-        $q.load::<$ty>($conn)
+        let __diesel_q = $q;
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
+        __diesel_q.load::<$ty>($conn)
     }};
 }
 
@@ -108,8 +110,9 @@ macro_rules! diesel_load {
 #[macro_export]
 macro_rules! diesel_get_result {
     ($conn:expr, $q:expr, $ty:ty) => {{
-        $crate::dieselhelper::logging::log_query(&$q);
-        $q.get_result::<$ty>($conn)
+        let __diesel_q = $q;
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
+        __diesel_q.get_result::<$ty>($conn)
     }};
 }
 
@@ -120,8 +123,9 @@ macro_rules! diesel_get_result {
 #[macro_export]
 macro_rules! diesel_get_results {
     ($conn:expr, $q:expr, $ty:ty) => {{
-        $crate::dieselhelper::logging::log_query(&$q);
-        $q.get_results::<$ty>($conn)
+        let __diesel_q = $q;
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
+        __diesel_q.get_results::<$ty>($conn)
     }};
 }
 
@@ -132,8 +136,9 @@ macro_rules! diesel_get_results {
 #[macro_export]
 macro_rules! diesel_first {
     ($conn:expr, $q:expr, $ty:ty) => {{
-        $crate::dieselhelper::logging::log_query(&$q);
-        $q.first::<$ty>($conn)
+        let __diesel_q = $q;
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
+        __diesel_q.first::<$ty>($conn)
     }};
 }
 
@@ -145,8 +150,9 @@ macro_rules! diesel_first {
 macro_rules! diesel_optional {
     ($conn:expr, $q:expr, $ty:ty) => {{
         use diesel::OptionalExtension;
-        $crate::dieselhelper::logging::log_query(&$q);
-        $q.get_result::<$ty>($conn).optional()
+        let __diesel_q = $q;
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
+        __diesel_q.get_result::<$ty>($conn).optional()
     }};
 }
 

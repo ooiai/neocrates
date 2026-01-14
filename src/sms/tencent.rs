@@ -15,6 +15,7 @@ pub fn hmac_sha256(key: &[u8], data: &[u8]) -> CtOutput<Hmac<Sha256>> {
     mac.finalize()
 }
 
+#[derive(Debug, Clone)]
 pub enum Region {
     Beijing,
     Nanjing,
@@ -44,7 +45,7 @@ pub struct SendSmsResponse {
     #[serde(alias = "SendStatusSet")]
     pub send_status_set: Vec<SendStatus>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SendStatus {
     #[serde(alias = "SerialNo")]
     pub serial_no: String,

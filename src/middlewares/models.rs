@@ -12,12 +12,14 @@ pub const CACHE_AUTH_TOKEN: &str = ":auth:token:";
 pub const CACHE_AUTH_REFRESH_TOKEN: &str = ":auth:refresh_token:";
 pub const CACHE_ADMIN_PERMS: &str = ":perms:admin:";
 
+pub const CACHE_AUTH_FP_UID: &str = ":auth:fp:uid:";
+pub const CACHE_AUTH_UID_FP: &str = ":auth:uid:fp:";
+
 // Token expiration (seconds)
-pub const EXPIRES_AT: u64 = 60 * 30;
-pub const REFRESH_EXPIRES_AT: u64 = 60 * 60 * 24 * 15;
+// pub const EXPIRES_AT: u64 = 60 * 30;
+// pub const REFRESH_EXPIRES_AT: u64 = 60 * 60 * 24 * 15;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct AuthTokenResult {
     // access token
     pub access_token: String,
@@ -30,12 +32,13 @@ pub struct AuthTokenResult {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct AuthModel {
     // user id
     pub uid: i64,
+    // tenant id
+    pub tid: i64,
     // space(company/org) id
-    pub spid: i64,
+    pub ogid: i64,
     // space(company/org) name
     pub sname: String,
     // mobile number

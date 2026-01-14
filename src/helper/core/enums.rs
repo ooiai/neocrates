@@ -15,6 +15,7 @@ pub enum DeleteEnum {
 pub enum StatusEnum {
     ENABLE = 0,
     DISABLE = 1,
+    LOCKED = 2,
 }
 
 // asc desc

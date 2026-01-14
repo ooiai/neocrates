@@ -1,12 +1,81 @@
+use once_cell::sync::Lazy;
 use rand::prelude::*;
+use regex::Regex;
 
 pub struct Utils;
+
+// ==================== Common Validators ====================
+//
+// Notes:
+// - These validators are intended for common application validation, not for strict telecom compliance.
+// - Mainland China mobile numbers change over time; keep regex updated if your business needs stricter rules.
+
+static CN_MOBILE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    // Mainland China mobile (simple): 11 digits, starts with 1, second digit 3-9
+    // Examples: 13800138000
+    Regex::new(r"^1[3-9]\d{9}$").expect("Failed to compile CN_MOBILE_REGEX")
+});
+
+static CN_LANDLINE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    // China landline (simple):
+    // - With area code: 0xx-xxxxxxx / 0xxx-xxxxxxxx
+    // - Without area code: xxxxxxx / xxxxxxxx
+    // - Optional extension: -xxxx (1-6 digits)
+    // Examples:
+    // - 010-88886666
+    // - 02088886666
+    // - 0571-88886666-123
+    // - 88886666
+    Regex::new(r"^(?:(?:0\d{2,3}-?)?\d{7,8})(?:-\d{1,6})?$")
+        .expect("Failed to compile CN_LANDLINE_REGEX")
+});
+
+static EMAIL_REGEX: Lazy<Regex> = Lazy::new(|| {
+    // Practical email regex (not fully RFC 5322, but good for most cases)
+    // - local part: letters/digits and common symbols
+    // - domain: labels separated by dots, TLD length >= 2
+    Regex::new(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$")
+        .expect("Failed to compile EMAIL_REGEX")
+});
 
 impl Utils {
     /// Generate a random token using UUIDv4.
     pub fn generate_token() -> String {
         let uuid = uuid::Uuid::new_v4();
         uuid.to_string()
+    }
+
+    /// Validate mainland China mobile number (common rule).
+    ///
+    /// Examples:
+    /// - valid: "13800138000"
+    /// - invalid: "12800138000", "1380013800", "+8613800138000"
+    pub fn is_cn_mobile(phone: &str) -> bool {
+        CN_MOBILE_REGEX.is_match(phone.trim())
+    }
+
+    /// Validate China landline number (common rule).
+    ///
+    /// Examples:
+    /// - valid: "010-88886666", "02088886666", "0571-88886666-123", "88886666"
+    /// - invalid: "010-8888666", "0a0-88886666"
+    pub fn is_cn_landline(phone: &str) -> bool {
+        CN_LANDLINE_REGEX.is_match(phone.trim())
+    }
+
+    /// Validate email address (practical rule).
+    ///
+    /// Examples:
+    /// - valid: "user@example.com"
+    /// - invalid: "user@", "@example.com", "user@example"
+    pub fn is_email(email: &str) -> bool {
+        EMAIL_REGEX.is_match(email.trim())
+    }
+
+    /// Validate "phone-like" input: either mainland mobile or landline.
+    pub fn is_cn_phone(phone: &str) -> bool {
+        let p = phone.trim();
+        Self::is_cn_mobile(p) || Self::is_cn_landline(p)
     }
 
     // Mask phone numbers differently based on input length

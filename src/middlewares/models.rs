@@ -37,10 +37,10 @@ pub struct AuthModel {
     pub uid: i64,
     // tenant id
     pub tid: i64,
-    // space(company/org) id
-    pub ogid: i64,
-    // space(company/org) name
-    pub sname: String,
+    // space(company/org/org_unit_id) id
+    pub ouid: i64,
+    // space(company/org/org_unit_id) name
+    pub ouname: String,
     // mobile number
     pub mobile: String,
     // nickname

@@ -245,8 +245,8 @@ impl AuthHelper {
         let auth_token = AuthTokenResult {
             access_token: token,
             refresh_token,
-            expires_at: expires_at,
-            refresh_expires_at: refresh_expires_at,
+            expires_at,
+            refresh_expires_at,
         };
 
         Self::store_token(rdpool, prefix, &auth_model, &auth_token).await?;

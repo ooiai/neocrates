@@ -129,7 +129,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_generate_basic_auth_key() {
-        let key = "magic_server:brand";
+        let key = "topedu::auth";
         let encoded_key = Crypto::generate_basic_auth_key(key);
         println!("{}", encoded_key);
         // assert_eq!(encoded_key, "dGVzdF9rZXk="); // "test_key" encoded in base64
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn test_decode_basic_auth_key() {
-        let key = "topedu:eduweb";
+        let key = "topedu::auth";
         let encoded_key = Crypto::generate_basic_auth_key(key);
         let decoded_key =
             Crypto::decode_basic_auth_key(&encoded_key).expect("Failed to decode key");

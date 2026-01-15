@@ -44,33 +44,50 @@ pub async fn interceptor(
         uri
     );
     // Bypass middleware for URLs matching configured ignore prefixes
-    if ignore_urls
+    if let Some(ignore_url) = ignore_urls
         .iter()
-        .any(|ignore_url| uri.starts_with(ignore_url))
+        .find(|ignore_url| uri.starts_with(ignore_url.as_str()))
     {
+        tracing::info!("Middleware Authorization Ignore Urls :{}", ignore_url);
         return next.run(request).await;
     }
     // PMS (Permission Management System) ignore URLs
-    if pms_ignore_urls
+    if let Some(ignore_url) = pms_ignore_urls
         .iter()
-        .any(|ignore_url| uri.starts_with(ignore_url))
+        .find(|ignore_url| uri.starts_with(ignore_url.as_str()))
     {
         let auth_str = request
             .headers()
             .get(AUTHORIZATION)
             .and_then(|value| value.to_str().ok())
             .filter(|auth_str| auth_str.starts_with(BASIC));
+        tracing::info!(
+            "Middleware Authorization PMS Ignore Urls: {:?} auth_str:{:?}",
+            ignore_url,
+            auth_str
+        );
         if let Some(auth_str) = auth_str {
             // Check if auth_str is in auth_basics
             if let Some(matched_basic) = auth_basics.iter().find(|basic| basic.as_str() == auth_str)
             {
                 let basic = Crypto::decode_basic_auth_key(matched_basic).map_err(|e| {
-                    tracing::warn!("Middleware Authorization BASIC failed: {:?}", e);
+                    tracing::warn!(
+                        "Middleware Authorization BASIC failed: auth_str:{:?} error{:?}",
+                        auth_str,
+                        e
+                    );
                     AppError::Unauthorized.into_response()
                 });
-                tracing::info!("Middleware Authorization BASIC Success info:{:?}", basic);
+                tracing::info!(
+                    "Middleware Authorization BASIC Success auth_str:{} basic:{:?}",
+                    auth_str,
+                    basic
+                );
             } else {
-                tracing::warn!("Middleware Authorization BASIC not allowed");
+                tracing::warn!(
+                    "Middleware Authorization BASIC not allowed auth_str:{:?}",
+                    auth_str
+                );
                 return AppError::Unauthorized.into_response();
             }
         } else {

@@ -9,6 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use url::form_urlencoded;
 
 use crate::{
+    crypto::core::Crypto,
     middlewares::{
         ip::get_request_host,
         models::{AUTHORIZATION, AuthModel, BASIC, BEARER, CACHE_AUTH_TOKEN, MiddlewareConfig},
@@ -34,6 +35,7 @@ pub async fn interceptor(
     let ignore_urls = &config.ignore_urls;
     let prefix = &config.prefix;
     let pms_ignore_urls = &config.pms_ignore_urls;
+    let auth_basics = &config.auth_basics;
 
     let (request_ip, uri) = get_request_host(&mut request);
     tracing::info!(
@@ -53,12 +55,26 @@ pub async fn interceptor(
         .iter()
         .any(|ignore_url| uri.starts_with(ignore_url))
     {
-        if let Some(auth_header) = request.headers().get(AUTHORIZATION) {
-            if let Ok(auth_str) = auth_header.to_str() {
-                if auth_str.starts_with(BASIC) {}
+        let auth_str = request
+            .headers()
+            .get(AUTHORIZATION)
+            .and_then(|value| value.to_str().ok())
+            .filter(|auth_str| auth_str.starts_with(BASIC));
+        if let Some(auth_str) = auth_str {
+            // Check if auth_str is in auth_basics
+            if let Some(matched_basic) = auth_basics.iter().find(|basic| basic.as_str() == auth_str)
+            {
+                let basic = Crypto::decode_basic_auth_key(matched_basic).map_err(|e| {
+                    tracing::warn!("Middleware Authorization BASIC failed: {:?}", e);
+                    AppError::Unauthorized.into_response()
+                });
+                tracing::info!("Middleware Authorization BASIC Success info:{:?}", basic);
+            } else {
+                tracing::warn!("Middleware Authorization BASIC not allowed");
+                return AppError::Unauthorized.into_response();
             }
         } else {
-            tracing::warn!("Middleware Missing Authorization BASIC header");
+            tracing::warn!("Middleware Missing or Invalid Authorization BASIC header");
             return AppError::Unauthorized.into_response();
         }
         return next.run(request).await;

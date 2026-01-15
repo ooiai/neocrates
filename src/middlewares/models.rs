@@ -58,4 +58,5 @@ pub struct MiddlewareConfig {
     pub ignore_urls: Vec<String>,
     pub pms_ignore_urls: Vec<String>,
     pub prefix: String,
+    pub auth_basics: Vec<String>,
 }

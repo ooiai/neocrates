@@ -137,10 +137,12 @@ mod tests {
 
     #[test]
     fn test_decode_basic_auth_key() {
-        let key = "magic_server:admin";
+        let key = "topedu:eduweb";
         let encoded_key = Crypto::generate_basic_auth_key(key);
-        let _decoded_key =
+        let decoded_key =
             Crypto::decode_basic_auth_key(&encoded_key).expect("Failed to decode key");
+        println!("encoded_key: {}", encoded_key);
+        println!("decoded_key: {}", decoded_key);
     }
 
     #[test]

@@ -60,10 +60,13 @@ pub async fn interceptor(
             .headers()
             .get(AUTHORIZATION)
             .and_then(|value| value.to_str().ok())
-            .filter(|auth_str| auth_str.starts_with(BASIC));
+            .filter(|auth_str| auth_str.starts_with(BASIC))
+            .map(|auth_str| auth_str[(BASIC.len() + 1)..].trim());
+
         tracing::info!(
-            "Middleware Authorization PMS Ignore Urls: {:?} auth_str:{:?}",
+            "Middleware Authorization PMS Ignore Urls: {:?} auth_basics:{:?} auth_str:{:?}",
             ignore_url,
+            auth_basics,
             auth_str
         );
         if let Some(auth_str) = auth_str {
@@ -101,7 +104,7 @@ pub async fn interceptor(
     if let Some(auth_header) = request.headers().get(AUTHORIZATION) {
         if let Ok(auth_str) = auth_header.to_str() {
             if auth_str.starts_with(BEARER) {
-                token_opt = Some(auth_str[7..].to_string());
+                token_opt = Some(auth_str[(BEARER.len() + 1)..].to_string());
             }
         }
     }

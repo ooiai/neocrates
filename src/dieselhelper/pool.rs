@@ -174,4 +174,14 @@ impl DieselPool {
         self.interact(|conn| DieselConnection::transaction(conn, f))
             .await
     }
+
+    /// Execute a function with a database connection (non-transactional).
+    pub async fn run<F, T, E>(&self, f: F) -> DatabaseResult<T>
+    where
+        F: FnOnce(&mut PgConnection) -> Result<T, E> + Send + 'static,
+        T: Send + 'static,
+        E: Send + 'static + Into<DatabaseError>,
+    {
+        self.interact(f).await
+    }
 }

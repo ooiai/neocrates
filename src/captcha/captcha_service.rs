@@ -37,9 +37,9 @@ pub struct CaptchaData {
 pub struct CaptchaService;
 
 impl CaptchaService {
-    const CACHE_PREFIX_SLIDER: &'static str = "captcha:slider:";
-    const CACHE_PREFIX_NUMERIC: &'static str = "captcha:numeric:";
-    const CACHE_PREFIX_ALPHA: &'static str = "captcha:alpha:";
+    const CACHE_PREFIX_SLIDER: &'static str = ":captcha:slider:";
+    const CACHE_PREFIX_NUMERIC: &'static str = ":captcha:numeric:";
+    const CACHE_PREFIX_ALPHA: &'static str = ":captcha:alpha:";
 
     /// Default expiration time (2 minutes)
     const DEFAULT_EXPIRATION: u64 = 120;
@@ -73,13 +73,14 @@ impl CaptchaService {
     #[cfg(any(feature = "redis", feature = "full"))]
     pub async fn gen_captcha_slider(
         redis_pool: &Arc<RedisPool>,
+        prefix: &str,
         code: &str,
         account: &str,
+        expires_in: Option<u64>,
     ) -> AppResult<()> {
-        let key = format!("{}{}", Self::CACHE_PREFIX_SLIDER, account);
+        let key = format!("{}{}{}", prefix, Self::CACHE_PREFIX_SLIDER, account);
         let value = Self::hash_code(code);
-        let seconds = Self::DEFAULT_EXPIRATION;
-
+        let seconds = expires_in.unwrap_or(Self::DEFAULT_EXPIRATION);
         redis_pool
             .setex(key, value.clone(), seconds)
             .await
@@ -107,11 +108,12 @@ impl CaptchaService {
     #[cfg(any(feature = "redis", feature = "full"))]
     pub async fn captcha_slider_valid(
         redis_pool: &Arc<RedisPool>,
+        prefix: &str,
         code: &str,
         account: &str,
         delete: bool,
     ) -> AppResult<()> {
-        let key = format!("{}{}", Self::CACHE_PREFIX_SLIDER, account);
+        let key = format!("{}{}{}", prefix, Self::CACHE_PREFIX_SLIDER, account);
         let result = redis_pool
             .get::<_, String>(&key)
             .await
@@ -154,9 +156,10 @@ impl CaptchaService {
     #[cfg(any(feature = "redis", feature = "full"))]
     pub async fn captcha_slider_delete(
         redis_pool: &Arc<RedisPool>,
+        prefix: &str,
         account: &str,
     ) -> AppResult<()> {
-        let key = format!("{}{}", Self::CACHE_PREFIX_SLIDER, account);
+        let key = format!("{}{}{}", prefix, Self::CACHE_PREFIX_SLIDER, account);
         redis_pool
             .del(&key)
             .await
@@ -194,8 +197,10 @@ impl CaptchaService {
     #[cfg(any(feature = "redis", feature = "full"))]
     pub async fn gen_numeric_captcha(
         redis_pool: &Arc<RedisPool>,
+        prefix: &str,
         account: &str,
         length: Option<usize>,
+        expires_in: Option<u64>,
     ) -> AppResult<CaptchaData> {
         let len = length.unwrap_or(6).clamp(4, 8);
 
@@ -207,10 +212,11 @@ impl CaptchaService {
             .collect();
 
         let id = crate::uuid::Uuid::new_v4().to_string();
-        let key = format!("{}{}", Self::CACHE_PREFIX_NUMERIC, id);
+        let key = format!("{}{}{}", prefix, Self::CACHE_PREFIX_NUMERIC, id);
+        let seconds = expires_in.unwrap_or(Self::DEFAULT_EXPIRATION);
 
         redis_pool
-            .setex(&key, code.clone(), Self::DEFAULT_EXPIRATION)
+            .setex(&key, code.clone(), seconds)
             .await
             .map_err(|e| AppError::RedisError(e.to_string()))?;
 
@@ -223,7 +229,7 @@ impl CaptchaService {
         Ok(CaptchaData {
             id,
             code,
-            expires_in: Self::DEFAULT_EXPIRATION,
+            expires_in: seconds,
         })
     }
 
@@ -237,11 +243,12 @@ impl CaptchaService {
     #[cfg(any(feature = "redis", feature = "full"))]
     pub async fn validate_numeric_captcha(
         redis_pool: &Arc<RedisPool>,
+        prefix: &str,
         id: &str,
         code: &str,
         delete: bool,
     ) -> AppResult<()> {
-        let key = format!("{}{}", Self::CACHE_PREFIX_NUMERIC, id);
+        let key = format!("{}{}{}", prefix, Self::CACHE_PREFIX_NUMERIC, id);
         let result = redis_pool
             .get::<_, String>(&key)
             .await
@@ -302,8 +309,10 @@ impl CaptchaService {
     #[cfg(any(feature = "redis", feature = "full"))]
     pub async fn gen_alphanumeric_captcha(
         redis_pool: &Arc<RedisPool>,
+        prefix: &str,
         account: &str,
         length: Option<usize>,
+        expires_in: Option<u64>,
     ) -> AppResult<CaptchaData> {
         let len = length.unwrap_or(6).clamp(4, 10);
 
@@ -321,10 +330,11 @@ impl CaptchaService {
             .collect();
 
         let id = crate::uuid::Uuid::new_v4().to_string();
-        let key = format!("{}{}", Self::CACHE_PREFIX_ALPHA, id);
+        let key = format!("{}{}{}", prefix, Self::CACHE_PREFIX_ALPHA, id);
+        let seconds = expires_in.unwrap_or(Self::DEFAULT_EXPIRATION);
 
         redis_pool
-            .setex(&key, code.clone(), Self::DEFAULT_EXPIRATION)
+            .setex(&key, code.clone(), seconds)
             .await
             .map_err(|e| AppError::RedisError(e.to_string()))?;
 
@@ -337,7 +347,7 @@ impl CaptchaService {
         Ok(CaptchaData {
             id,
             code,
-            expires_in: Self::DEFAULT_EXPIRATION,
+            expires_in: seconds,
         })
     }
 
@@ -351,11 +361,12 @@ impl CaptchaService {
     #[cfg(any(feature = "redis", feature = "full"))]
     pub async fn validate_alphanumeric_captcha(
         redis_pool: &Arc<RedisPool>,
+        prefix: &str,
         id: &str,
         code: &str,
         delete: bool,
     ) -> AppResult<()> {
-        let key = format!("{}{}", Self::CACHE_PREFIX_ALPHA, id);
+        let key = format!("{}{}{}", prefix, Self::CACHE_PREFIX_ALPHA, id);
         let result = redis_pool
             .get::<_, String>(&key)
             .await

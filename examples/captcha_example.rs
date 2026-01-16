@@ -89,8 +89,10 @@ async fn generate_numeric_captcha(
 ) -> Response {
     match CaptchaService::gen_numeric_captcha(
         &state.redis_pool,
+        "your_prefix",
         &payload.account,
         Some(payload.length),
+        Some(300),
     )
     .await
     {
@@ -123,8 +125,10 @@ async fn generate_alphanumeric_captcha(
 ) -> Response {
     match CaptchaService::gen_alphanumeric_captcha(
         &state.redis_pool,
+        "your_prefix",
         &payload.account,
         Some(payload.length),
+        Some(300),
     )
     .await
     {
@@ -155,8 +159,14 @@ async fn generate_slider_captcha(
     State(state): State<AppState>,
     Json(payload): Json<GenerateSliderRequest>,
 ) -> Response {
-    match CaptchaService::gen_captcha_slider(&state.redis_pool, &payload.code, &payload.account)
-        .await
+    match CaptchaService::gen_captcha_slider(
+        &state.redis_pool,
+        "your_prefix",
+        &payload.code,
+        &payload.account,
+        Some(300),
+    )
+    .await
     {
         Ok(_) => (
             StatusCode::OK,
@@ -187,6 +197,7 @@ async fn validate_numeric_captcha(
 ) -> Response {
     match CaptchaService::validate_numeric_captcha(
         &state.redis_pool,
+        "your_prefix",
         &payload.id,
         &payload.code,
         true, // Delete after validation
@@ -222,6 +233,7 @@ async fn validate_alphanumeric_captcha(
 ) -> Response {
     match CaptchaService::validate_alphanumeric_captcha(
         &state.redis_pool,
+        "your_prefix",
         &payload.id,
         &payload.code,
         true, // Delete after validation
@@ -257,6 +269,7 @@ async fn validate_slider_captcha(
 ) -> Response {
     match CaptchaService::captcha_slider_valid(
         &state.redis_pool,
+        "your_prefix",
         &payload.code,
         &payload.account,
         true, // Delete after validation

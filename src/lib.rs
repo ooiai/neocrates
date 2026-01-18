@@ -232,5 +232,5 @@ pub mod sms;
 #[cfg(any(feature = "captcha", feature = "full"))]
 pub mod captcha;
 
-#[cfg(all(feature = "auth", feature = "redis", feature = "full"))]
+#[cfg(any(feature = "auth", feature = "redis", feature = "full"))]
 pub mod auth;

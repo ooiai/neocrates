@@ -33,7 +33,8 @@ pub async fn interceptor(
 ) -> Response {
     let token_store = &config.token_store;
     let ignore_urls = &config.ignore_urls;
-    let prefix = &config.prefix;
+    // let prefix = &config.prefix;
+    let prefix = "";
     let pms_ignore_urls = &config.pms_ignore_urls;
     let auth_basics = &config.auth_basics;
 

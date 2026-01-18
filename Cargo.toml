@@ -1,6 +1,6 @@
 [package]
 name = "neocrates"
-version = "0.1.31"
+version = "0.1.32"
 authors = ["hamerkillers@gmail.com"]
 edition = "2024"
 description = "A comprehensive Rust library for various utilities and helpers"
@@ -67,7 +67,9 @@ crypto = [
     "dep:sha2",
 ]
 sms = []
-full = ["web", "aws", "awss3", "awssts", "diesel", "redis", "crypto", "sms", "logger"]
+captcha=[]
+auth=[]
+full = ["web", "aws", "awss3", "awssts", "diesel", "redis", "crypto", "sms", "logger" ,"captcha", "auth"]
 
 [dependencies]
 # Core

@@ -229,8 +229,8 @@ pub mod crypto;
 pub mod sms;
 
 // Captcha (requires web and redis features for full functionality)
-#[cfg(any(feature = "web", feature = "full"))]
+#[cfg(any(feature = "captcha", feature = "full"))]
 pub mod captcha;
 
-#[cfg(all(feature = "web", feature = "redis", feature = "full"))]
+#[cfg(all(feature = "auth", feature = "redis", feature = "full"))]
 pub mod auth;

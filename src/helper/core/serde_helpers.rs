@@ -114,6 +114,41 @@ where
     }
 }
 
+///
+/// Deserialize Option<Vec<i64>> type
+///
+pub fn deserialize_vec_option_i64<'de, D>(deserializer: D) -> Result<Option<Vec<i64>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: Value = Deserialize::deserialize(deserializer)?;
+    match value {
+        Value::Null => Ok(None),
+        Value::Array(arr) => {
+            let mut result = Vec::new();
+            for item in arr {
+                let parsed_id = match item {
+                    Value::Number(num) => num
+                        .as_i64()
+                        .ok_or_else(|| serde::de::Error::custom("Invalid number"))?,
+                    Value::String(s) => hashid::decode_i64(s.as_str())
+                        .to_string()
+                        .parse::<i64>()
+                        .map_err(serde::de::Error::custom)?,
+                    _ => {
+                        return Err(serde::de::Error::custom(
+                            "Expected a number or string in array",
+                        ));
+                    }
+                };
+                result.push(parsed_id);
+            }
+            Ok(Some(result))
+        }
+        _ => Err(serde::de::Error::custom("Expected an array or null")),
+    }
+}
+
 /// Convert any type to Option<i64>
 /// Supports null, number, string
 ///
@@ -196,6 +231,35 @@ where
             // tracing::error!("serialize_option_i64: {}", encode_u64);
             serializer.serialize_str(&encode_u64)
         }
+        None => serializer.serialize_none(),
+    }
+}
+
+///
+/// Serialize Vec<i64> type
+///
+pub fn serialize_vec_i64<S>(x: &Vec<i64>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    use serde::ser::SerializeSeq;
+    let mut seq = serializer.serialize_seq(Some(x.len()))?;
+    for element in x {
+        let encode_u64 = hashid::encode_i64(*element);
+        seq.serialize_element(&encode_u64)?;
+    }
+    seq.end()
+}
+
+///
+/// Serialize Option<Vec<i64>> type
+///
+pub fn serialize_vec_option_i64<S>(x: &Option<Vec<i64>>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match x {
+        Some(vec) => serialize_vec_i64(vec, serializer),
         None => serializer.serialize_none(),
     }
 }

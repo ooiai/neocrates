@@ -36,22 +36,29 @@ pub struct AuthModel {
     // user id
     pub uid: i64,
     // mobile number
+    #[serde(default)]
     pub mobile: String,
     // nickname
+    #[serde(default)]
     pub nickname: String,
     // username
+    #[serde(default)]
     pub username: String,
     // tenant id
     pub tid: i64,
     // tenant name
+    #[serde(default)]
     pub tname: String,
     // space(company/org/org_unit_id) id
     pub ouid: i64,
     // space(company/org/org_unit_id) name
+    #[serde(default)]
     pub ouname: String,
     // role ids
+    #[serde(default)]
     pub rids: Vec<i64>,
     // pms ids
+    #[serde(default)]
     pub pmsids: Vec<i64>,
 }
 

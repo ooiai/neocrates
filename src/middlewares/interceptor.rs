@@ -127,7 +127,16 @@ pub async fn interceptor(
         .await
         {
             Ok(Some(m)) => m,
-            Ok(None) => return AppError::TokenExpired.into_response(),
+            Ok(None) => {
+                return {
+                    tracing::warn!(
+                        "Middleware token expired: store_key:{} token:{}",
+                        store_key,
+                        token
+                    );
+                    AppError::TokenExpired.into_response()
+                };
+            }
             Err(e) => {
                 tracing::warn!("Middleware failed to fetch token from store: {}", e);
                 return AppError::TokenExpired.into_response();

@@ -35,18 +35,24 @@ pub struct AuthTokenResult {
 pub struct AuthModel {
     // user id
     pub uid: i64,
-    // tenant id
-    pub tid: i64,
-    // space(company/org/org_unit_id) id
-    pub ouid: i64,
-    // space(company/org/org_unit_id) name
-    pub ouname: String,
     // mobile number
     pub mobile: String,
     // nickname
     pub nickname: String,
     // username
     pub username: String,
+    // tenant id
+    pub tid: i64,
+    // tenant name
+    pub tname: String,
+    // space(company/org/org_unit_id) id
+    pub ouid: i64,
+    // space(company/org/org_unit_id) name
+    pub ouname: String,
+    // role ids
+    pub rids: Vec<i64>,
+    // pms ids
+    pub pmsids: Vec<i64>,
 }
 
 /// token_store - A pluggable token store (Redis or in-memory)

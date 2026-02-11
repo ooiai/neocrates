@@ -54,6 +54,15 @@ impl Utils {
         CN_MOBILE_REGEX.is_match(phone.trim())
     }
 
+    /// Generate a random token using UUIDv4 without dashes.
+    ///
+    /// Examples:
+    /// - "550e8400e29b41d4a716446655440000"
+    pub fn generate_token_no_dash() -> String {
+        let uuid = uuid::Uuid::new_v4();
+        uuid.to_string().replace("-", "")
+    }
+
     /// Validate China landline number (common rule).
     ///
     /// Examples:

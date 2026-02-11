@@ -7,6 +7,7 @@ pub const BASIC: &str = "Basic";
 pub const TOKEN_KEY: &str = ":auth_user:";
 
 // Cache key segments
+pub const CACHE_USER_INFO: &str = ":userinfo:uid:";
 pub const CACHE_AUTH_UID: &str = ":auth:uid:";
 pub const CACHE_AUTH_TOKEN: &str = ":auth:token:";
 pub const CACHE_AUTH_REFRESH_TOKEN: &str = ":auth:refresh_token:";
@@ -14,6 +15,11 @@ pub const CACHE_ADMIN_PERMS: &str = ":perms:admin:";
 
 pub const CACHE_AUTH_FP_UID: &str = ":auth:fp:uid:";
 pub const CACHE_AUTH_UID_FP: &str = ":auth:uid:fp:";
+
+// set role permission cache key
+pub const CACHE_PERMS_RID: &str = ":perms:roleid:";
+// set role menus cache key
+pub const CACHE_MENUS_RID: &str = ":menus:roleid:";
 
 // Token expiration (seconds)
 // pub const EXPIRES_AT: u64 = 60 * 30;

@@ -144,9 +144,10 @@ pub async fn interceptor(
             }
         };
         tracing::warn!("Middleware extracted cache_token: {:?}", &auth_model);
-        // TODO: Load admin role permission
-
-        // TODO: Load agent role permission
+        // TODO: Load role permission
+        let uid = auth_model.uid;
+        let tid = auth_model.tid;
+        let ouid = auth_model.ouid;
 
         // Rewrite auth model into request extensions
         request.extensions_mut().insert(auth_model);

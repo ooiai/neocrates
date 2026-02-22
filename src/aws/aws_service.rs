@@ -136,4 +136,49 @@ impl AwsService {
         };
         Ok(())
     }
+
+    /// Get a signed URL for accessing an object
+    ///
+    /// # Arguments
+    /// * `path` - The path of the object
+    /// * `expires_in` - The expiration time in seconds (default: 3600)
+    /// 
+    /// example: `get_signed_url("path/to/object", 3600).await`
+    /// let signed_url = AwsService::get_signed_url("path/to/file.png", 3600).await?;
+    ///
+    /// # Returns
+    /// * `AppResult<String>` - The signed URL or an error
+    ///
+    pub async fn get_signed_url(path: &str, expires_in: u64) -> AppResult<String> {
+        let cfg = OSS_CONFIG.get().expect("OSS_CONFIG not initialized");
+        let client = match AwsClient::new(
+            &cfg.bucket,
+            &cfg.region,
+            &cfg.endpoint,
+            &cfg.access_key,
+            &cfg.secret_key,
+        )
+        .await
+        {
+            Ok(client) => client,
+            Err(e) => {
+                tracing::error!("「get_signed_url」Failed to create AWS client: {}", e);
+                return Err(AppError::ClientError(e.to_string()));
+            }
+        };
+
+        match client
+            .get_presigned_url(path, std::time::Duration::from_secs(expires_in))
+            .await
+        {
+            Ok(url) => {
+                tracing::info!("「get_signed_url」Generated signed URL for path: {}", path);
+                Ok(url)
+            }
+            Err(e) => {
+                tracing::error!("「get_signed_url」Failed to generate signed URL: {}", e);
+                return Err(AppError::ClientError(e.to_string()));
+            }
+        }
+    }
 }

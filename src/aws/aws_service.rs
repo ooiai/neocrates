@@ -1,5 +1,5 @@
 use once_cell::sync::OnceCell;
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use crate::{
     aws::sts_service::AwsConfig,
@@ -13,6 +13,7 @@ pub struct OssConfig {
     pub endpoint: String,
     pub access_key: String,
     pub secret_key: String,
+    pub force_path_style: bool,
 }
 
 static OSS_CONFIG: OnceCell<OssConfig> = OnceCell::new();
@@ -34,6 +35,7 @@ impl OssConfig {
                 endpoint: cfg.aliyun_endpoint.clone(),
                 access_key: cfg.aliyun_accesskey_id.clone(),
                 secret_key: cfg.aliyun_accesskey_secret.clone(),
+                force_path_style: false,
             },
             "rustfs" => OssConfig {
                 bucket: cfg.rustfs_bucket.clone(),
@@ -41,6 +43,7 @@ impl OssConfig {
                 endpoint: cfg.rustfs_endpoint.clone(),
                 access_key: cfg.rustfs_accesskey_id.clone(),
                 secret_key: cfg.rustfs_accesskey_secret.clone(),
+                force_path_style: true,
             },
             "minio" => OssConfig {
                 bucket: cfg.minio_bucket.clone(),
@@ -48,6 +51,7 @@ impl OssConfig {
                 endpoint: cfg.minio_endpoint.clone(),
                 access_key: cfg.minio_accesskey_id.clone(),
                 secret_key: cfg.minio_accesskey_secret.clone(),
+                force_path_style: true,
             },
             _ => panic!("Unsupported COS type: {}", cfg.cos_type),
         }
@@ -71,19 +75,11 @@ impl AwsService {
     ///
     pub async fn download_object(path: &str) -> AppResult<Vec<u8>> {
         let cfg = OSS_CONFIG.get().expect("OSS_CONFIG not initialized");
-        let client = match AwsClient::new(
-            &cfg.bucket,
-            &cfg.region,
-            &cfg.endpoint,
-            &cfg.access_key,
-            &cfg.secret_key,
-        )
-        .await
-        {
+        let client = match Self::build_client(cfg).await {
             Ok(client) => client,
-            Err(e) => {
-                tracing::error!("「download_object」Failed to create AWS client: {}", e);
-                return Err(AppError::ClientError(e.to_string()));
+            Err(err) => {
+                tracing::error!("「download_object」Failed to create AWS client: {}", err);
+                return Err(err);
             }
         };
 
@@ -111,19 +107,11 @@ impl AwsService {
     ///
     pub async fn put_object(path: &str, data: Vec<u8>) -> AppResult<()> {
         let cfg = OSS_CONFIG.get().expect("OSS_CONFIG not initialized");
-        let client = match AwsClient::new(
-            &cfg.bucket,
-            &cfg.region,
-            &cfg.endpoint,
-            &cfg.access_key,
-            &cfg.secret_key,
-        )
-        .await
-        {
+        let client = match Self::build_client(cfg).await {
             Ok(client) => client,
-            Err(e) => {
-                tracing::error!("「put_object」Failed to create AWS client: {}", e);
-                return Err(AppError::ClientError(e.to_string()));
+            Err(err) => {
+                tracing::error!("「put_object」Failed to create AWS client: {}", err);
+                return Err(err);
             }
         };
 
@@ -142,7 +130,7 @@ impl AwsService {
     /// # Arguments
     /// * `path` - The path of the object
     /// * `expires_in` - The expiration time in seconds (default: 3600)
-    /// 
+    ///
     /// example: `get_signed_url("path/to/object", 3600).await`
     /// let signed_url = AwsService::get_signed_url("path/to/file.png", 3600).await?;
     ///
@@ -151,24 +139,16 @@ impl AwsService {
     ///
     pub async fn get_signed_url(path: &str, expires_in: u64) -> AppResult<String> {
         let cfg = OSS_CONFIG.get().expect("OSS_CONFIG not initialized");
-        let client = match AwsClient::new(
-            &cfg.bucket,
-            &cfg.region,
-            &cfg.endpoint,
-            &cfg.access_key,
-            &cfg.secret_key,
-        )
-        .await
-        {
+        let client = match Self::build_client(cfg).await {
             Ok(client) => client,
-            Err(e) => {
-                tracing::error!("「get_signed_url」Failed to create AWS client: {}", e);
-                return Err(AppError::ClientError(e.to_string()));
+            Err(err) => {
+                tracing::error!("「get_signed_url」Failed to create AWS client: {}", err);
+                return Err(err);
             }
         };
 
         match client
-            .get_presigned_url(path, std::time::Duration::from_secs(expires_in))
+            .get_presigned_url(path, Duration::from_secs(expires_in.max(1)))
             .await
         {
             Ok(url) => {
@@ -180,5 +160,119 @@ impl AwsService {
                 return Err(AppError::ClientError(e.to_string()));
             }
         }
+    }
+
+    /// Get a signed PUT URL for uploading an object.
+    pub async fn get_signed_put_url(path: &str, expires_in: u64) -> AppResult<String> {
+        let cfg = OSS_CONFIG.get().expect("OSS_CONFIG not initialized");
+        let client = match Self::build_client(cfg).await {
+            Ok(client) => client,
+            Err(err) => {
+                tracing::error!("「get_signed_put_url」Failed to create AWS client: {}", err);
+                return Err(err);
+            }
+        };
+
+        match client
+            .get_presigned_put_url(path, Duration::from_secs(expires_in.max(1)))
+            .await
+        {
+            Ok(url) => {
+                tracing::info!(
+                    "「get_signed_put_url」Generated signed PUT URL for path: {}",
+                    path
+                );
+                Ok(url)
+            }
+            Err(e) => {
+                tracing::error!(
+                    "「get_signed_put_url」Failed to generate signed PUT URL: {}",
+                    e
+                );
+                Err(AppError::ClientError(e.to_string()))
+            }
+        }
+    }
+
+    /// Download object bytes via signed URL.
+    pub async fn download_object_via_signed_url(path: &str, expires_in: u64) -> AppResult<Vec<u8>> {
+        let signed_url = Self::get_signed_url(path, expires_in).await?;
+        let safe_url = Self::redact_url(&signed_url);
+        let response = reqwest::Client::new()
+            .get(&signed_url)
+            .send()
+            .await
+            .map_err(|err| {
+                AppError::ClientError(format!(
+                    "download_object_via_signed_url request failed: url={} err={}",
+                    safe_url, err
+                ))
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(AppError::ClientError(format!(
+                "download_object_via_signed_url failed: status={} url={} body={}",
+                status, safe_url, body
+            )));
+        }
+
+        let bytes = response.bytes().await.map_err(|err| {
+            AppError::ClientError(format!(
+                "download_object_via_signed_url read body failed: url={} err={}",
+                safe_url, err
+            ))
+        })?;
+        Ok(bytes.to_vec())
+    }
+
+    /// Upload object bytes via signed PUT URL.
+    pub async fn put_object_via_signed_url(
+        path: &str,
+        data: Vec<u8>,
+        expires_in: u64,
+    ) -> AppResult<()> {
+        let signed_put_url = Self::get_signed_put_url(path, expires_in).await?;
+        let safe_url = Self::redact_url(&signed_put_url);
+        let response = reqwest::Client::new()
+            .put(&signed_put_url)
+            .body(data)
+            .send()
+            .await
+            .map_err(|err| {
+                AppError::ClientError(format!(
+                    "put_object_via_signed_url request failed: url={} err={}",
+                    safe_url, err
+                ))
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(AppError::ClientError(format!(
+                "put_object_via_signed_url failed: status={} url={} body={}",
+                status, safe_url, body
+            )));
+        }
+
+        Ok(())
+    }
+
+    fn redact_url(url: &str) -> String {
+        url.split('?').next().unwrap_or(url).to_string()
+    }
+
+    async fn build_client(cfg: &OssConfig) -> AppResult<AwsClient> {
+        AwsClient::new_with_options(
+            &cfg.bucket,
+            &cfg.region,
+            &cfg.endpoint,
+            &cfg.access_key,
+            &cfg.secret_key,
+            cfg.force_path_style,
+        )
+        .await
+        .map_err(|e| AppError::ClientError(e.to_string()))
     }
 }

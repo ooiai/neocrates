@@ -1,7 +1,12 @@
 use std::time::Duration;
 
 use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_s3::{Client, config::Region, presigning::PresigningConfig, primitives::ByteStream};
+use aws_sdk_s3::{
+    Client,
+    config::{Builder as S3ConfigBuilder, Credentials, Region},
+    presigning::PresigningConfig,
+    primitives::ByteStream,
+};
 
 pub struct AwsClient {
     client: Client,
@@ -9,6 +14,32 @@ pub struct AwsClient {
 }
 
 impl AwsClient {
+    pub async fn new_with_options(
+        bucket: &str,
+        region: &str,
+        endpoint: &str,
+        access_key: &str,
+        secret_key: &str,
+        force_path_style: bool,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let region_provider = RegionProviderChain::first_try(Region::new(region.to_owned()));
+        let config_loader = aws_config::from_env()
+            .region(region_provider)
+            .endpoint_url(endpoint)
+            .credentials_provider(Credentials::new(access_key, secret_key, None, None, "oss"));
+
+        let shared_config = config_loader.load().await;
+        let s3_config = S3ConfigBuilder::from(&shared_config)
+            .force_path_style(force_path_style)
+            .build();
+        let client = Client::from_conf(s3_config);
+
+        Ok(Self {
+            client,
+            bucket: bucket.to_owned(),
+        })
+    }
+
     pub async fn new(
         bucket: &str,
         region: &str,
@@ -16,21 +47,7 @@ impl AwsClient {
         access_key: &str,
         secret_key: &str,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let region_provider = RegionProviderChain::first_try(Region::new(region.to_owned()));
-        let config_loader = aws_config::from_env()
-            .region(region_provider)
-            .endpoint_url(endpoint)
-            .credentials_provider(aws_sdk_s3::config::Credentials::new(
-                access_key, secret_key, None, None, "oss",
-            ));
-
-        let config = config_loader.load().await;
-        let client = Client::new(&config);
-
-        Ok(Self {
-            client,
-            bucket: bucket.to_owned(),
-        })
+        Self::new_with_options(bucket, region, endpoint, access_key, secret_key, false).await
     }
 
     ///
@@ -79,6 +96,25 @@ impl AwsClient {
         let presigned_req = self
             .client
             .get_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .presigned(presign_config)
+            .await?;
+        Ok(presigned_req.uri().to_string())
+    }
+
+    ///
+    /// Get a presigned PUT URL for uploading an object to the bucket.
+    ///
+    pub async fn get_presigned_put_url(
+        &self,
+        key: &str,
+        expires_in: Duration,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        let presign_config = PresigningConfig::expires_in(expires_in)?;
+        let presigned_req = self
+            .client
+            .put_object()
             .bucket(&self.bucket)
             .key(key)
             .presigned(presign_config)

@@ -1,375 +1,217 @@
 # Neocrates
 
-一个全面的 Rust 库，为 Web 开发、AWS 集成、数据库操作、缓存等提供统一的访问接口。Neocrates 作为门面 crate，重新导出多个内部模块的功能。
+一个全面的 Rust 工具库，通过模块化方式提供 Web 开发、AWS 集成、数据库操作、Redis 缓存、加密、认证等功能。Neocrates 作为门面 crate，对生态系统中的优秀 crate 进行封装和重新导出 —— 通过 Feature 标志按需启用，你只为用到的功能付费。
 
 [![crates.io](https://img.shields.io/crates/v/neocrates.svg)](https://crates.io/crates/neocrates)
 [![docs.rs](https://img.shields.io/docsrs/neocrates)](https://docs.rs/neocrates)
-[![License](https://img.shields.io/crates/l/neocrates)](https://github.com/ooiai/neocrates/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ooiai/neocrates/blob/main/LICENSE)
+[![Build](https://github.com/ooiai/neocrates/actions/workflows/rust.yml/badge.svg)](https://github.com/ooiai/neocrates/actions/workflows/rust.yml)
 
-- **English Documentation**: [README.md](README.md)
+**English Documentation**: [README.md](README.md)
 
 ---
 
-## 🚀 功能特性
+## ✨ 功能特性
 
-- **模块化设计**：通过特性标志按需启用功能
-- **AWS 集成**：支持 Aliyun/Tencent Cloud 的 S3 和 STS 客户端
-- **数据库助手**：Diesel 集成与连接池
-- **缓存支持**：Redis 连接池和缓存工具
-- **Web 工具**：日志记录、中间件、响应处理和验证
-- **安全功能**：加密工具和短信功能
-- **零成本**：未使用的功能不会增加二进制文件大小
+| Feature    | 说明                                                           |
+|------------|----------------------------------------------------------------|
+| `web`      | Axum + Tower + Hyper、reqwest HTTP 客户端、URL 工具、中间件与响应类型 |
+| `aws`      | 完整 AWS 套件（S3 + STS，支持 AWS / 阿里云 / 腾讯云）          |
+| `awss3`    | 仅 S3 客户端                                                   |
+| `awssts`   | 仅 STS 客户端（阿里云 & 腾讯云）                               |
+| `diesel`   | Diesel ORM + deadpool-diesel 连接池（PostgreSQL）               |
+| `redis`    | bb8-redis 连接池 + Moka 进程内缓存                              |
+| `crypto`   | Argon2 密码哈希、HMAC、SHA-2、Ring 底层加密                     |
+| `sms`      | 短信助手（阿里云 & 腾讯云）                                     |
+| `captcha`  | 验证码服务                                                     |
+| `auth`     | JWT 与会话认证助手                                              |
+| `logger`   | 结构化 tracing-subscriber 日志                                  |
+| `full`     | 以上全部                                                       |
+
+**最低支持 Rust 版本（MSRV）**：Rust 1.84+（edition 2024）
 
 ---
 
 ## 📦 安装
 
-在你的项目 `Cargo.toml` 中添加 Neocrates：
-
-### 全功能版本（推荐用于快速开始）
-
 ```toml
 [dependencies]
-neocrates = "0.1"
-```
+# 全功能 —— 快速上手
+neocrates = { version = "0.1", features = ["full"] }
 
-### 按需选择功能（推荐用于生产环境）
-
-```toml
-[dependencies]
-neocrates = { version = "0.1", default-features = false, features = ["awss3", "rediscache", "logger"] }
-```
-
-### 最低支持的 Rust 版本 (MSRV)
-
-- Rust 1.84+（使用 `edition = "2024"`）
-
----
-
-## 🔧 特性标志
-
-Neocrates 使用特性标志来保持依赖精简。所有特性默认通过 `full` 特性启用。
-
-| 特性           | 描述                        | 依赖                        |
-| -------------- | --------------------------- | --------------------------- |
-| `awss3`        | S3 客户端工具               | aws-sdk-s3, aws-config      |
-| `awssts`       | STS 客户端 (Aliyun/Tencent) | aws-sdk-sts, hmac, sha2     |
-| `crypto`       | 加密工具                    | openssl, ring, argon2       |
-| `dieselhelper` | Diesel 数据库助手           | diesel, deadpool-diesel     |
-| `helper`       | 通用工具                    | serde, validator, uuid      |
-| `logger`       | 基于 Tracing 的日志         | tracing, tracing-subscriber |
-| `middleware`   | Web 中间件                  | axum, tower-http            |
-| `rediscache`   | Redis 缓存工具              | redis, bb8-redis, moka      |
-| `response`     | 响应类型                    | axum, serde_json            |
-| `sms`          | 短信工具                    | reqwest, hmac, sha2         |
-| `full`         | 启用以上所有特性            | -                           |
-
-**禁用默认特性：**
-
-```toml
-neocrates = { version = "0.1", default-features = false, features = ["awss3", "logger"] }
+# 按需选择 —— 推荐用于生产环境（更小的二进制体积）
+neocrates = { version = "0.1", default-features = false, features = ["web", "redis", "logger"] }
 ```
 
 ---
 
-## 🎯 使用示例
+## 🚀 快速开始
 
-### 基础设置
+### 日志
 
 ```rust
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // 初始化日志（需要 "logger" 特性）
     #[cfg(feature = "logger")]
     neocrates::logger::run().await;
 
-    // 使用 S3 客户端（需要 "awss3" 特性）
-    #[cfg(feature = "awss3")]
-    {
-        use neocrates::awss3::aws::AwsClient;
-
-        let s3_client = AwsClient::new(
-            "my-bucket",
-            "us-east-1",
-            "https://s3.amazonaws.com",
-            "ACCESS_KEY",
-            "SECRET_KEY"
-        ).await?;
-
-        // 上传对象
-        s3_client.put_object("uploads/file.txt", b"Hello, World!".to_vec()).await?;
-    }
-
-    // 使用 Redis 缓存（需要 "rediscache" 特性）
-    #[cfg(feature = "rediscache")]
-    {
-        use neocrates::rediscache::RedisPool;
-
-        let redis_pool = RedisPool::from_env().await?;
-        let mut conn = redis_pool.get_connection().await?;
-
-        // 设置和获取缓存
-        neocrates::redis::cmd("SET").arg("key").arg("value").query_async(&mut *conn).await?;
-        let value: String = neocrates::redis::cmd("GET").arg("key").query_async(&mut *conn).await?;
-    }
-
+    neocrates::tracing::info!("neocrates 已就绪");
     Ok(())
 }
 ```
 
-### AWS STS 客户端
+### S3 客户端
 
 ```rust
-// Aliyun STS 客户端
+#[cfg(feature = "awss3")]
+{
+    use neocrates::awss3::aws::AwsClient;
+
+    let s3 = AwsClient::new(
+        "my-bucket", "us-east-1",
+        "https://s3.amazonaws.com",
+        &std::env::var("AWS_ACCESS_KEY_ID")?,
+        &std::env::var("AWS_SECRET_ACCESS_KEY")?,
+    ).await?;
+
+    s3.put_object("uploads/hello.txt", b"Hello, World!".to_vec()).await?;
+}
+```
+
+### 阿里云 / 腾讯云 STS
+
+```rust
 #[cfg(feature = "awssts")]
-async fn aliyun_sts_example() -> anyhow::Result<()> {
+{
     use neocrates::awssts::aliyun::StsClient;
 
-    let aliyun_client = StsClient::new(
-        "YOUR_ACCESS_KEY_ID",
-        "YOUR_ACCESS_KEY_SECRET",
-        "acs:ram::123456789012:role/my-role",
-        "session-name"
+    let sts = StsClient::new(
+        &std::env::var("ALI_AK")?,
+        &std::env::var("ALI_SK")?,
+        "acs:ram::123456789012:role/OSSRole",
+        "session-name",
     );
-
-    let credentials = aliyun_client.assume_role(3600).await?;
-    println!("临时 AK: {}", credentials.credentials.access_key_id);
-
-    Ok(())
-}
-
-// Tencent STS 客户端
-#[cfg(feature = "awssts")]
-async fn tencent_sts_example() -> anyhow::Result<()> {
-    use neocrates::awssts::tencent::StsClient;
-
-    let tencent_client = StsClient::new(
-        "YOUR_SECRET_ID",
-        "YOUR_SECRET_KEY",
-        "ap-guangzhou"
-    );
-
-    // 注意：请查看文档以获取具体的方法签名
-    // let credentials = tencent_client.get_temp_credentials(...).await?;
-
-    Ok(())
+    let creds = sts.assume_role(3600).await?;
+    println!("临时 AK: {}", creds.credentials.access_key_id);
 }
 ```
 
-### 数据库操作
+### Redis 缓存
 
 ```rust
-#[cfg(feature = "dieselhelper")]
-use neocrates::dieselhelper;
+#[cfg(feature = "redis")]
+{
+    use neocrates::rediscache::RedisPool;
 
-#[cfg(feature = "dieselhelper")]
-async fn database_example() -> anyhow::Result<()> {
-    // 初始化数据库连接池
-    let pool = dieselhelper::create_pool("DATABASE_URL").await?;
+    let pool = RedisPool::from_env().await?;          // 读取 REDIS_URL
+    let mut conn = pool.get_connection().await?;
 
-    // 使用连接池中的连接
+    neocrates::redis::cmd("SET").arg("key").arg("val").query_async(&mut *conn).await?;
+    let v: String = neocrates::redis::cmd("GET").arg("key").query_async(&mut *conn).await?;
+    println!("{v}");
+}
+```
+
+### Diesel（PostgreSQL）
+
+```rust
+#[cfg(feature = "diesel")]
+{
+    use neocrates::dieselhelper;
+
+    let pool = dieselhelper::create_pool(&std::env::var("DATABASE_URL")?).await?;
     dieselhelper::with_connection(&pool, |conn| {
-        // 在这里执行数据库操作
-        // 例如: User::find_by_id(conn, 1)?
+        // diesel 操作 …
         Ok::<(), neocrates::diesel::result::Error>(())
     }).await?;
-
-    Ok(())
 }
 ```
 
-### Web 应用（带中间件）
+### Axum Web 应用
 
 ```rust
-#[cfg(all(feature = "axum", feature = "middleware"))]
-use neocrates::{axum, middleware};
-
-#[cfg(all(feature = "axum", feature = "middleware"))]
-async fn web_app() -> anyhow::Result<()> {
-    use axum::{routing::get, Router};
+#[cfg(feature = "web")]
+{
+    use neocrates::axum::{routing::get, Router};
 
     let app = Router::new()
-        .route("/health", get(|| async { "OK" }))
-        .layer(middleware::trace_layer()) // 添加追踪中间件
-        .layer(middleware::cors_layer()); // 添加 CORS 中间件
+        .route("/health", get(|| async { "OK" }));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    axum::serve(listener, app).await?;
-
-    Ok(())
+    neocrates::axum::serve(listener, app).await?;
 }
 ```
 
 ---
 
-## ⚙️ 配置
+## ⚙️ 环境变量
 
-### 环境变量
-
-许多模块支持基于环境的配置：
-
-- **Redis**: `REDIS_URL`, `REDIS_POOL_SIZE`
-- **数据库**: `DATABASE_URL`, `DATABASE_POOL_SIZE`
-- **日志**: `RUST_LOG` (默认: "info")
-- **AWS**: 标准 AWS 环境变量
-
-### 自定义配置
-
-对于高级用例，大多数模块接受自定义配置结构：
-
-```rust
-#[cfg(feature = "rediscache")]
-{
-    use neocrates::rediscache::{RedisConfig, RedisPool};
-
-    let config = RedisConfig {
-        url: "redis://localhost:6379".to_string(),
-        max_size: 10,
-        min_idle: Some(1),
-        connection_timeout: std::time::Duration::from_secs(5),
-        idle_timeout: Some(std::time::Duration::from_secs(600)),
-        max_lifetime: Some(std::time::Duration::from_secs(3600)),
-    };
-
-    let pool = RedisPool::new(config).await?;
-}
-```
+| 变量名                    | 模块         | 说明                          |
+|--------------------------|--------------|-------------------------------|
+| `DATABASE_URL`           | `diesel`     | PostgreSQL 连接字符串         |
+| `DATABASE_POOL_SIZE`     | `diesel`     | 连接池大小                    |
+| `REDIS_URL`              | `redis`      | Redis 连接 URL                |
+| `REDIS_POOL_SIZE`        | `redis`      | Redis 连接池大小              |
+| `RUST_LOG`               | `logger`     | 日志级别过滤（默认：`info`）  |
+| `AWS_ACCESS_KEY_ID`      | `awss3`      | AWS / S3 兼容访问密钥         |
+| `AWS_SECRET_ACCESS_KEY`  | `awss3`      | AWS / S3 兼容密钥             |
 
 ---
 
 ## 🛠️ 开发命令
 
-### 构建
-
 ```bash
-# 默认（所有特性）
-cargo build -p neocrates
-
-# 选择性特性
-cargo build -p neocrates --no-default-features --features "awss3,rediscache,logger"
-
-# 发布构建
-cargo build --release -p neocrates
+make build          # cargo build
+make build-full     # cargo build --features full
+make test           # cargo test
+make test-full      # cargo test --features full
+make lint           # cargo clippy -D warnings
+make fmt            # cargo fmt
+make doc            # cargo doc --open
+make audit          # cargo audit（需安装 cargo-audit）
+make dry-run        # 测试发布
+make publish m="release: v0.1.x"
 ```
 
-### 测试
-
-```bash
-# 运行所有测试
-cargo test -p neocrates
-
-# 测试特定特性
-cargo test -p neocrates --features "awss3,rediscache"
-```
-
-### 代码检查
-
-```bash
-cargo clippy -p neocrates -- -D warnings
-cargo fmt --check
-```
-
-### 文档
-
-```bash
-# 生成本地文档
-cargo doc -p neocrates --open
-
-# 检查文档链接
-cargo doc -p neocrates --no-deps
-```
+运行 `make help` 查看所有可用目标。
 
 ---
 
-## 📤 发布（维护者指南）
+## 🤝 贡献指南
 
-### 先决条件
-
-1. 在 `Cargo.toml` 中填写完整的包元数据
-2. 有效的许可证文件（`LICENSE-MIT`, `LICENSE-APACHE`）
-3. 干净的 git 仓库（无未提交的更改）
-
-### 发布序列
+1. 新功能应放在 Feature 标志后面。
+2. 为新功能添加测试（异步测试使用 `#[tokio::test]`）。
+3. 提交 PR 前运行 `make lint` 和 `make fmt`。
+4. 添加新模块时同步更新本 README 和 `AGENTS.md`。
 
 ```bash
-# 先测试发布
-cargo publish -p neocrates --dry-run
-
-# 发布到 crates.io
-cargo publish -p neocrates --registry crates-io
-```
-
-### 版本管理
-
-- 遵循语义化版本控制 (SemVer)
-- 在工作区根目录 `Cargo.toml` 中更新版本
-- 修改公共 API 时考虑破坏性变更
-
----
-
-## 📚 文档
-
-- **API 参考**: [docs.rs/neocrates](https://docs.rs/neocrates)
-- **源代码**: [GitHub 仓库](https://github.com/ooiai/neocrates)
-- **包信息**: [crates.io/neocrates](https://crates.io/crates/neocrates)
-
----
-
-## 🤝 贡献
-
-欢迎贡献！请遵循以下准则：
-
-1. **特性标志**：新功能尽可能放在特性标志后面
-2. **测试**：为新功能包含测试
-3. **文档**：更新 README 并添加文档注释
-4. **代码质量**：提交前运行 `cargo clippy` 和 `cargo fmt`
-
-### 开发工作流
-
-```bash
-# 克隆和设置
 git clone https://github.com/ooiai/neocrates.git
 cd neocrates
-
-# 构建和测试
-cargo build -p neocrates
-cargo test -p neocrates
-
-# 验证发布准备就绪
-cargo publish -p neocrates --dry-run
+make build-full && make test-full
 ```
 
 ---
 
 ## 🛡️ 安全
 
-- **凭据**：切勿在代码或示例中硬编码机密信息
-- **依赖**：保持依赖更新以解决安全漏洞
-- **最小权限原则**：为 AWS 角色和数据库用户使用最小权限
-- **输入验证**：始终验证和清理用户输入
+- 切勿将凭据硬编码在代码中 —— 使用环境变量或密钥管理服务。
+- 在处理前始终验证和清理用户输入。
+- 密码哈希请使用 Argon2（通过 `crypto` feature），禁止使用 MD5 或 SHA-1。
+- 如发现安全漏洞，请直接联系维护者。
 
-如果您发现安全漏洞，请直接联系维护者。
+---
+
+## 📚 相关资源
+
+- **API 文档**：[docs.rs/neocrates](https://docs.rs/neocrates)
+- **crates.io**：[crates.io/crates/neocrates](https://crates.io/crates/neocrates)
+- **源代码**：[github.com/ooiai/neocrates](https://github.com/ooiai/neocrates)
+- **使用示例**：[USAGE_EXAMPLES.md](USAGE_EXAMPLES.md)
 
 ---
 
 ## 📄 许可证
 
-Neocrates 采用双重许可证：
+MIT License — Copyright © 2026 [ooiai](https://github.com/ooiai)
 
-- **MIT 许可证** ([LICENSE-MIT](LICENSE-MIT))
-- **Apache 许可证 2.0** ([LICENSE-APACHE](LICENSE-APACHE))
-
-SPDX-License-Identifier: MIT OR Apache-2.0
-
----
-
-## 🙏 致谢
-
-感谢 Rust 社区和我们所依赖的优秀 crate 的作者们：
-
-- [AWS SDK for Rust](https://github.com/awslabs/aws-sdk-rust)
-- [Axum](https://github.com/tokio-rs/axum)
-- [Diesel](https://github.com/diesel-rs/diesel)
-- [Redis-rs](https://github.com/redis-rs/redis-rs)
-- [Tracing](https://github.com/tokio-rs/tracing)
-- 以及其他许多优秀的项目！
+完整许可证文本见 [LICENSE](LICENSE)。

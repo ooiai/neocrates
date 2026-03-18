@@ -80,6 +80,7 @@ fn default_true() -> bool {
 
 pub fn init(config: LogConfig) {
     let config = config.log;
+    #[cfg(any(feature = "diesel", feature = "full"))]
     if let Some(on) = config.sql_log {
         crate::dieselhelper::logging::set_sql_logging(on);
     }

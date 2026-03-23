@@ -1,43 +1,24 @@
 #![allow(unused_imports)]
-// Dev-only Diesel SQL logging helpers with minimal call-site changes
+// Dev-only Diesel SQL logging helpers with minimal call-site changes.
 //
-// Goal:
-// - Print the actual SQL (with bound values) every time a Diesel query is executed,
-//   without changing Postgres config or docker-compose.
-// - Keep call-site changes minimal: replace `.execute` / `.load::<T>` / `.get_result::<T>`
-//   with small macros.
+// `log_query` and `log_sql_str` are annotated with `#[track_caller]`.
+// Because the macros expand at the user's call site, `Location::caller()`
+// automatically resolves to the file/line/column where the macro was written —
+// no extra parameters needed.
 //
-// How to use (minimal changes at call sites):
+// Example output:
+//   INFO sql: [src/services/user.rs:42:5]
+//     sql | SELECT users.id FROM users WHERE users.id = $1 -- binds: [1]
+//
+// How to use:
 // - Before:
 //     let affected = diesel::update(users).set(name.eq("alice")).execute(conn)?;
 //   After:
 //     let affected = diesel_execute!(conn, diesel::update(users).set(name.eq("alice")))?;
 //
-// - Before:
-//     let rows = users.filter(id.eq(1)).load::<User>(conn)?;
-//   After:
-//     let rows = diesel_load!(conn, users.filter(id.eq(1)), User)?;
-//
-// - Before:
-//     let user = users.filter(id.eq(1)).first::<User>(conn)?;
-//   After:
-//     let user = diesel_first!(conn, users.filter(id.eq(1)), User)?;
-//
-// - For native SQL without binds:
-//     diesel_execute_sql!(conn, "SET TIME ZONE 'UTC'")?;
-//
-// Notes:
-// - Logging is enabled only in debug builds by default. You can override with env:
+// - Logging is enabled only in debug builds by default.
 //     SQL_LOG=1  -> force enable
 //     SQL_LOG=0  -> force disable
-// - For Diesel DSL and most `sql_query(...).bind(...)`, we use `diesel::debug_query::<Pg, _>`
-//   which renders SQL with values inlined for Postgres.
-//
-// Log output format (macros capture and print caller location automatically):
-//
-//   INFO sql: [my_crate::services::user  src/services/user.rs:42]
-//     expr | users.filter(id.eq(1))
-//     sql  | SELECT users.id FROM users WHERE users.id = $1 -- binds: [1]
 
 use diesel::{debug_query, pg::Pg, query_builder::QueryFragment};
 use once_cell::sync::OnceCell;
@@ -60,73 +41,48 @@ pub fn is_sql_logging_enabled() -> bool {
     if let Some(flag) = SQL_LOG_OVERRIDE.get() {
         return flag.load(Ordering::Relaxed);
     }
-    // Default: enabled only in debug builds
     cfg!(debug_assertions)
 }
 
-/// Log a Diesel query (with bound values) and full caller location.
+/// Log a Diesel query (with bound values).
 ///
-/// Prefer using the macros (`diesel_execute!`, `diesel_load!`, etc.) so that
-/// `file`, `line`, `module_path`, and `query_expr` are captured automatically
-/// at the macro call site.
-#[inline]
-pub fn log_query_at<Q>(
-    q: &Q,
-    file: &'static str,
-    line: u32,
-    module_path: &'static str,
-    query_expr: &'static str,
-) where
-    Q: QueryFragment<Pg>,
-{
-    if is_sql_logging_enabled() {
-        info!(
-            target: "sql",
-            "[{}  {}:{}]\n  expr | {}\n  sql  | {}",
-            module_path,
-            file,
-            line,
-            query_expr,
-            debug_query::<Pg, _>(q),
-        );
-    }
-}
-
-/// Log a raw SQL string and full caller location.
-///
-/// Prefer using `diesel_execute_sql!` so that location is captured automatically.
-#[inline]
-pub fn log_sql_str_at(sql: &str, file: &'static str, line: u32, module_path: &'static str) {
-    if is_sql_logging_enabled() {
-        info!(
-            target: "sql",
-            "[{}  {}:{}]\n  sql  | {}",
-            module_path,
-            file,
-            line,
-            sql,
-        );
-    }
-}
-
-/// Log a Diesel query (with bound values) if logging is enabled.
-/// Does **not** include call-site location; use the macros instead.
-#[inline]
+/// `#[track_caller]` automatically captures the file/line/column of the
+/// call site — no extra parameters required. When called from a macro the
+/// location resolves to where the macro was written.
+#[track_caller]
 pub fn log_query<Q>(q: &Q)
 where
     Q: QueryFragment<Pg>,
 {
     if is_sql_logging_enabled() {
-        info!(target: "sql", "sql | {}", debug_query::<Pg, _>(q));
+        let loc = std::panic::Location::caller();
+        info!(
+            target: "sql",
+            "[{}:{}:{}]\n  sql | {}",
+            loc.file(),
+            loc.line(),
+            loc.column(),
+            debug_query::<Pg, _>(q),
+        );
     }
 }
 
-/// Convenience: log a raw SQL string (for simple `sql_query` without binds).
-/// Does **not** include call-site location; use `diesel_execute_sql!` instead.
-#[inline]
+/// Log a raw SQL string (for simple `sql_query` without binds).
+///
+/// `#[track_caller]` automatically captures the file/line/column of the
+/// call site — no extra parameters required.
+#[track_caller]
 pub fn log_sql_str(sql: &str) {
     if is_sql_logging_enabled() {
-        info!(target: "sql", "sql | {}", sql);
+        let loc = std::panic::Location::caller();
+        info!(
+            target: "sql",
+            "[{}:{}:{}]\n  sql | {}",
+            loc.file(),
+            loc.line(),
+            loc.column(),
+            sql,
+        );
     }
 }
 
@@ -138,13 +94,7 @@ pub fn log_sql_str(sql: &str) {
 macro_rules! diesel_execute {
     ($conn:expr, $q:expr) => {{
         let __diesel_q = $q;
-        $crate::dieselhelper::logging::log_query_at(
-            &__diesel_q,
-            file!(),
-            line!(),
-            module_path!(),
-            stringify!($q),
-        );
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
         __diesel_q.execute($conn)
     }};
 }
@@ -157,13 +107,7 @@ macro_rules! diesel_execute {
 macro_rules! diesel_load {
     ($conn:expr, $q:expr, $ty:ty) => {{
         let __diesel_q = $q;
-        $crate::dieselhelper::logging::log_query_at(
-            &__diesel_q,
-            file!(),
-            line!(),
-            module_path!(),
-            stringify!($q),
-        );
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
         __diesel_q.load::<$ty>($conn)
     }};
 }
@@ -176,13 +120,7 @@ macro_rules! diesel_load {
 macro_rules! diesel_get_result {
     ($conn:expr, $q:expr, $ty:ty) => {{
         let __diesel_q = $q;
-        $crate::dieselhelper::logging::log_query_at(
-            &__diesel_q,
-            file!(),
-            line!(),
-            module_path!(),
-            stringify!($q),
-        );
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
         __diesel_q.get_result::<$ty>($conn)
     }};
 }
@@ -195,13 +133,7 @@ macro_rules! diesel_get_result {
 macro_rules! diesel_get_results {
     ($conn:expr, $q:expr, $ty:ty) => {{
         let __diesel_q = $q;
-        $crate::dieselhelper::logging::log_query_at(
-            &__diesel_q,
-            file!(),
-            line!(),
-            module_path!(),
-            stringify!($q),
-        );
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
         __diesel_q.get_results::<$ty>($conn)
     }};
 }
@@ -214,13 +146,7 @@ macro_rules! diesel_get_results {
 macro_rules! diesel_first {
     ($conn:expr, $q:expr, $ty:ty) => {{
         let __diesel_q = $q;
-        $crate::dieselhelper::logging::log_query_at(
-            &__diesel_q,
-            file!(),
-            line!(),
-            module_path!(),
-            stringify!($q),
-        );
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
         __diesel_q.first::<$ty>($conn)
     }};
 }
@@ -234,26 +160,19 @@ macro_rules! diesel_optional {
     ($conn:expr, $q:expr, $ty:ty) => {{
         use diesel::OptionalExtension;
         let __diesel_q = $q;
-        $crate::dieselhelper::logging::log_query_at(
-            &__diesel_q,
-            file!(),
-            line!(),
-            module_path!(),
-            stringify!($q),
-        );
+        $crate::dieselhelper::logging::log_query(&__diesel_q);
         __diesel_q.get_result::<$ty>($conn).optional()
     }};
 }
 
 /// Convenience macro to execute a raw SQL string with caller location logging.
-/// Good for statements without binds (e.g. SET TIME ZONE).
 ///
 /// Usage:
 ///   diesel_execute_sql!(conn, "SET TIME ZONE 'UTC'")?;
 #[macro_export]
 macro_rules! diesel_execute_sql {
     ($conn:expr, $sql:expr) => {{
-        $crate::dieselhelper::logging::log_sql_str_at($sql, file!(), line!(), module_path!());
+        $crate::dieselhelper::logging::log_sql_str($sql);
         diesel::sql_query($sql).execute($conn)
     }};
 }
@@ -265,8 +184,7 @@ mod tests {
     use std::io;
     use std::sync::{Arc, Mutex, MutexGuard};
 
-    // Serialize all tests that mutate the process-global SQL_LOG_OVERRIDE flag
-    // so they don't race with each other.
+    // Serialize tests that mutate the process-global SQL_LOG_OVERRIDE flag.
     static LOG_STATE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
     fn lock_log_state() -> MutexGuard<'static, ()> {
@@ -319,27 +237,20 @@ mod tests {
     }
 
     #[test]
-    fn test_log_sql_str_at_output_contains_location() {
+    fn test_log_sql_str_output_contains_location() {
         let _guard = lock_log_state();
         set_sql_logging(true);
 
         let (sub, buf) = make_capture_subscriber();
         tracing::subscriber::with_default(sub, || {
-            log_sql_str_at("SELECT 42", "src/services/user.rs", 99, "myapp::services::user");
+            log_sql_str("SELECT 42"); // <-- this line number appears in output
         });
 
         let output = String::from_utf8_lossy(&buf.lock().unwrap()).into_owned();
+        // file path of THIS test file must appear in the log
         assert!(
-            output.contains("src/services/user.rs"),
-            "output should contain file path; got: {output}"
-        );
-        assert!(
-            output.contains("99"),
-            "output should contain line number; got: {output}"
-        );
-        assert!(
-            output.contains("myapp::services::user"),
-            "output should contain module path; got: {output}"
+            output.contains("logging.rs"),
+            "output should contain the source file name; got: {output}"
         );
         assert!(
             output.contains("SELECT 42"),
@@ -350,13 +261,13 @@ mod tests {
     }
 
     #[test]
-    fn test_log_sql_str_at_silent_when_disabled() {
+    fn test_log_sql_str_silent_when_disabled() {
         let _guard = lock_log_state();
         set_sql_logging(false);
 
         let (sub, buf) = make_capture_subscriber();
         tracing::subscriber::with_default(sub, || {
-            log_sql_str_at("SELECT secret", "src/test.rs", 1, "myapp");
+            log_sql_str("SELECT secret");
         });
 
         let output = String::from_utf8_lossy(&buf.lock().unwrap()).into_owned();
@@ -364,18 +275,5 @@ mod tests {
             output.is_empty(),
             "should produce no output when logging is disabled; got: {output}"
         );
-    }
-
-    #[test]
-    fn test_log_sql_str_legacy_does_not_panic() {
-        let _guard = lock_log_state();
-        set_sql_logging(true);
-        let (sub, buf) = make_capture_subscriber();
-        tracing::subscriber::with_default(sub, || {
-            log_sql_str("SELECT 1");
-        });
-        let output = String::from_utf8_lossy(&buf.lock().unwrap()).into_owned();
-        assert!(output.contains("SELECT 1"), "legacy log_sql_str should still emit output");
-        set_sql_logging(false);
     }
 }

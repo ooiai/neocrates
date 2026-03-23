@@ -152,3 +152,6 @@ rust_decimal = "1.38"
 snowflaker = "0.3"
 prometheus = "0.14.0"
 schemars = "1"
+
+[dev-dependencies]
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

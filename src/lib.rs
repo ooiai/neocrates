@@ -163,6 +163,13 @@ pub use diesel;
 #[cfg(any(feature = "diesel", feature = "full"))]
 pub use diesel_migrations;
 
+// ==========================
+// Database sqlx re-exports (feature)
+// ==========================
+
+#[cfg(any(feature = "sqlx", feature = "full"))]
+pub use sqlx;
+
 // =========================
 // Redis re-exports (feature)
 // =========================
@@ -215,6 +222,9 @@ pub mod awssts;
 // Database
 #[cfg(any(feature = "diesel", feature = "full"))]
 pub mod dieselhelper;
+
+#[cfg(any(feature = "sqlx", feature = "full"))]
+pub mod sqlxhelper;
 
 // Redis
 #[cfg(any(feature = "redis", feature = "full"))]

@@ -54,6 +54,10 @@ diesel = [
     "dep:diesel_migrations",
     "dep:url",
 ]
+sqlx = [
+    "dep:sqlx",
+    "dep:url",
+]
 redis = [
     "dep:redis",
     "dep:bb8",
@@ -69,7 +73,7 @@ crypto = [
 sms = []
 captcha=[]
 auth=[]
-full = ["web", "aws", "awss3", "awssts", "diesel", "redis", "crypto", "sms", "logger" ,"captcha", "auth"]
+full = ["web", "aws", "awss3", "awssts", "diesel", "sqlx", "redis", "crypto", "sms", "logger" ,"captcha", "auth"]
 
 [dependencies]
 # Core
@@ -114,6 +118,7 @@ diesel = { version = "2", features = ["chrono", "serde_json"], optional = true }
 deadpool = { version = "0.12", optional = true }
 deadpool-diesel = { version = "0.6", features = ["postgres"], optional = true }
 diesel_migrations = { version = "2", optional = true }
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono", "uuid", "json", "migrate"], optional = true }
 
 # Redis
 redis = { version = "0.32", optional = true }

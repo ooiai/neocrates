@@ -1,12 +1,12 @@
 use argon2::{
     Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
+    password_hash::{self, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
 };
 
 use anyhow::Error;
 use base64::{Engine as _, engine::general_purpose};
 use hex::encode;
-use rand::Rng;
+use rand::RngExt;
 use tracing::warn;
 
 pub struct Crypto;
@@ -34,8 +34,10 @@ impl Crypto {
     /// * `Ok(String)` - On success, returns the PHC format hash string.
     /// * `Err(password_hash::Error)` - On failure, returns an error.
     pub fn hash_password(password: &str) -> Result<String, password_hash::Error> {
-        // SaltString uses a cryptographically secure RNG (OsRng) to automatically generate a salt.
-        let salt = SaltString::generate(&mut OsRng);
+        let mut salt_bytes = [0u8; 16];
+        let mut rng = rand::rng();
+        rng.fill(&mut salt_bytes);
+        let salt = SaltString::encode_b64(&salt_bytes)?;
 
         // Argon2::default() uses the recommended secure parameters.
         let argon2 = Argon2::default();

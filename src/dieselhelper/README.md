@@ -1,210 +1,148 @@
-# dieselhelper README
+# Diesel Helper Module
 
-This tutorial shows how to print every Diesel SQL (with bound values) in development without changing your Postgres or docker-compose. It uses a small set of macros that log the query via `tracing` before executing it. You only need minimal call-site changes.
+`dieselhelper` is the Diesel-oriented PostgreSQL integration layer in Neocrates. It combines:
 
-## Why this
+- async connection pooling via `deadpool-diesel`
+- automatic database creation when the target DB is missing
+- UTC timezone initialization for new connections
+- query logging macros for Diesel DSL calls
 
-- You want: every DB query prints the actual SQL with values for debugging.
-- You don’t want: to touch Postgres config, docker-compose, or wire up multiple logging systems.
-- Diesel internally uses prepared statements; “automatic” interception won’t print parameters reliably. The safest way is to log right before execution, which the macros do.
+See also: [root README](../../README.md)
 
-## Key features
+---
 
-- Dev-only logging by default. Production stays clean.
-- Logs the real SQL with parameters using `diesel::debug_query::<Pg, _>`.
-- Minimal changes: replace `.execute/.load/.first/.get_result` with macros.
+## Feature
 
-## Macros
+Enable with:
 
-These macros are available in `neocrates::dieselhelper::logging` and exported for direct use:
-
-- `diesel_execute!(conn, query)` → executes and logs SQL
-- `diesel_load!(conn, query, T)` → loads rows and logs SQL
-- `diesel_get_result!(conn, query, T)` → single row and logs SQL
-- `diesel_get_results!(conn, query, T)` → multiple rows and logs SQL
-- `diesel_first!(conn, query, T)` → first row and logs SQL
-- `diesel_optional!(conn, query, T)` → optional row and logs SQL (`NotFound` → `Ok(None)`)
-- `diesel_execute_sql!(conn, "SQL")` → logs and executes a raw SQL string (no binds)
-
-All macros print the SQL only when logging is enabled (see “Enable/disable logging” below).
-
-## Enable/disable logging
-
-- Default:
-  - Enabled in debug builds (`cfg!(debug_assertions)`), disabled in release.
-- Environment override:
-  - `SQL_LOG=1` → force enable
-  - `SQL_LOG=0` → force disable
-
-Examples:
-
-- macOS/Linux: `SQL_LOG=1 cargo run`
-- Windows PowerShell: `$env:SQL_LOG=1; cargo run`
-
-## Usage examples
-
-You can invoke macros by path (`neocrates::diesel_execute!`) or `use` them. With the 2018+ edition, path invocation works without `use`.
-
-### Load rows
-
-Before:
-
-```rust
-let rows = users.filter(active.eq(true)).load::<User>(conn)?;
+```toml
+neocrates = { version = "0.1", default-features = false, features = ["diesel"] }
 ```
 
-After (minimal):
+---
+
+## What this module exposes
+
+### Pooling API
+
+- `DieselPool::new(url, max_size)`
+- `DieselPool::pool()`
+- `DieselPool::connection()`
+- `DieselPool::status()`
+- `DieselPool::health_check()`
+- `DieselPool::interact(...)`
+- `DieselPool::transaction(...)`
+- `DieselPool::run(...)`
+
+### Error type
+
+- `DatabaseError`
+- `DatabaseResult<T>`
+
+### SQL logging helpers
+
+From `dieselhelper::logging`:
+
+- `set_sql_logging(enabled)`
+- `is_sql_logging_enabled()`
+- `diesel_execute!(conn, query)`
+- `diesel_load!(conn, query, T)`
+- `diesel_get_result!(conn, query, T)`
+- `diesel_get_results!(conn, query, T)`
+- `diesel_first!(conn, query, T)`
+- `diesel_optional!(conn, query, T)`
+- `diesel_execute_sql!(conn, "SQL")`
+
+---
+
+## Quick start
 
 ```rust
-let rows = neocrates::diesel_load!(conn, users.filter(active.eq(true)), User)?;
+use neocrates::dieselhelper::pool::DieselPool;
+
+async fn connect() -> neocrates::anyhow::Result<()> {
+    let pool = DieselPool::new("postgres://postgres:postgres@localhost/app", 10).await?;
+    pool.health_check().await?;
+    Ok(())
+}
 ```
 
-### Single result
+---
 
-Before:
+## Step-by-step tutorial
+
+## 1. Create the pool
 
 ```rust
-let user = users.filter(id.eq(user_id)).get_result::<User>(conn)?;
+use neocrates::dieselhelper::pool::DieselPool;
+
+let pool = DieselPool::new(
+    "postgres://postgres:postgres@localhost/neocrates_demo",
+    10,
+)
+.await?;
 ```
 
-After:
+What happens during startup:
 
-```rust
-let user = neocrates::diesel_get_result!(conn, users.filter(id.eq(user_id)), User)?;
-```
+1. the URL is parsed
+2. the target database name is extracted
+3. the helper connects to the system `postgres` database
+4. it creates the target database if it does not exist yet
+5. it builds the deadpool-diesel pool
+6. it runs `SET TIME ZONE 'UTC'` on the first connection
 
-Or using `first`:
-
-```rust
-let user = neocrates::diesel_first!(conn, users.filter(id.eq(user_id)), User)?;
-```
-
-### Optional single result
-
-Before:
-
-```rust
-let maybe = users.filter(id.eq(user_id)).first::<User>(conn).optional()?;
-```
-
-After:
-
-```rust
-let maybe = neocrates::diesel_optional!(conn, users.filter(id.eq(user_id)), User)?;
-```
-
-### Insert / Update / Delete
-
-Before:
-
-```rust
-let affected = diesel::insert_into(users).values(name.eq("alice")).execute(conn)?;
-```
-
-After:
-
-```rust
-let affected = neocrates::diesel_execute!(conn, diesel::insert_into(users).values(name.eq("alice")))?;
-```
-
-### Raw SQL (no binds)
-
-```rust
-neocrates::diesel_execute_sql!(conn, "SET TIME ZONE 'UTC'")?;
-```
-
-### In transactions (deadpool_diesel)
-
-Works the same inside `pool.transaction(|conn| { ... })`:
+## 2. Run a transaction
 
 ```rust
 pool.transaction(|conn| {
-    neocrates::diesel_first!(conn, users.find(42), User)
-}).await?;
+    // Place normal Diesel DSL code here.
+    // Example:
+    // diesel::insert_into(users::table).values(&new_user).execute(conn)?;
+    Ok::<_, diesel::result::Error>(())
+})
+.await?;
 ```
 
-## Minimal migration guide
+## 3. Turn on SQL logging
 
-Search/replace patterns (safe and incremental):
-
-- `.execute(conn)?` → `diesel_execute!(conn, <expr>)?`
-- `.load::<T>(conn)?` → `diesel_load!(conn, <expr>, T)?`
-- `.get_result::<T>(conn)?` → `diesel_get_result!(conn, <expr>, T)?`
-- `.first::<T>(conn)?` → `diesel_first!(conn, <expr>, T)?`
-- `.get_results::<T>(conn)?` → `diesel_get_results!(conn, <expr>, T)?`
-- `.first::<T>(conn).optional()?` → `diesel_optional!(conn, <expr>, T)?`
-
-Do this for the hotspots first (e.g., repo/service layers). You don’t need to touch schema or model definitions.
-
-## Logging output
-
-- The macros use `tracing::info!` to print.
-- Ensure you initialize your logger (e.g., via your existing `tracing_subscriber` setup).
-- Control verbosity (e.g., `RUST_LOG=info` or `RUST_LOG=debug`) as you normally do.
-
-Example log line (dev):
-
-```
-SELECT "id", "name" FROM "users" WHERE "id" = 42
-```
-
-This is produced by Diesel’s `debug_query`, with parameters inlined for Postgres.
-
-## Notes and caveats
-
-- Diesel DSL queries render well with `debug_query`. For `sql_query("...").bind(...)`, Diesel may not inline bound values in all cases; if you rely heavily on raw SQL with binds, consider logging the SQL string plus the bind values yourself for those spots.
-- The macros add negligible overhead, and only log in dev unless you force-enable via `SQL_LOG=1`.
-- No Postgres or container changes are needed. Everything stays at the application layer.
-
-## Example: repository method
-
-Original:
+You can enable Diesel SQL logging programmatically:
 
 ```rust
-async fn find_by_id(&self, id: i64) -> AppResult<Option<RoleAssignment>> {
-    let pool = self.pool.clone();
+use neocrates::dieselhelper::logging::set_sql_logging;
 
-    pool.transaction(move |conn| {
-        role_assignments::table
-            .find(id)
-            .first::<RoleAssignmentRecord>(conn)
-            .optional()
-            .map(|opt| opt.map(RoleAssignment::from))
-    })
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to find role assignment by id {}: {}", id, e);
-        AppError::DbError(e.to_string())
-    })
-}
+set_sql_logging(true);
 ```
 
-Minimal change:
+If you also use the `logger` module, `logger::LogSettings { sql_log: Some(true), .. }` can toggle the same flag.
+
+## 4. Replace query calls with logging macros
 
 ```rust
-async fn find_by_id(&self, id: i64) -> AppResult<Option<RoleAssignment>> {
-    let pool = self.pool.clone();
-
-    pool.transaction(move |conn| {
-        neocrates::diesel_optional!(conn, role_assignments::table.find(id), RoleAssignmentRecord)
-            .map(|opt| opt.map(RoleAssignment::from))
-    })
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to find role assignment by id {}: {}", id, e);
-        AppError::DbError(e.to_string())
-    })
-}
+let rows = neocrates::diesel_load!(conn, users::table.limit(10), User)?;
+let one = neocrates::diesel_first!(conn, users::table.find(42), User)?;
+let maybe = neocrates::diesel_optional!(conn, users::table.find(42), User)?;
+let affected = neocrates::diesel_execute!(conn, diesel::delete(users::table.find(42)))?;
 ```
 
-## Troubleshooting
+The macros log the SQL at the macro call site and then execute the query.
 
-- “I don’t see SQL logs.”
-  - Confirm you’re in a debug build or set `SQL_LOG=1`.
-  - Ensure your `tracing_subscriber` is initialized and `RUST_LOG` allows `info`.
-- “I need SQL in production logs.”
-  - Set `SQL_LOG=1` in production, but be aware of verbosity and potential log volume.
+---
 
-## Summary
+## Key points and gotchas
 
-These macros give you deterministic, dev-friendly SQL logging with minimal code changes and no infrastructure tweaks. Adopt them incrementally in your data access paths, and you’ll get reliable, parameter-inclusive SQL logs exactly where you need them.
+- SQL logging is **debug-build or programmatic-toggle behavior**, not an env-var-driven feature in the current code.
+- `debug_query` works best with Diesel DSL queries; raw SQL with binds may need additional manual logging.
+- `DieselPool::new(...)` takes an explicit pool size; unlike `sqlxhelper`, this module does not provide a `from_env()` helper today.
+- Database creation and timezone initialization are built into startup behavior, so document that when wiring it into an app.
+
+---
+
+## Roadmap
+
+Useful next improvements:
+
+1. Add a `from_env()` constructor mirroring `sqlxhelper`.
+2. Add migration helpers or guide integration around `diesel_migrations`.
+3. Add pool metrics and optional query timing.
+4. Expand docs.rs examples for fully typed Diesel usage.
